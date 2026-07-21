@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "dev": "npm run dev --workspace=@cashipro/web",
+    "build": "npm run build --workspace=@cashipro/web",
+    "start": "npm run start --workspace=@cashipro/web"
   },
   "devDependencies": {
     "turbo": "^1.10.16"
