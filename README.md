@@ -1,8 +1,27 @@
-# Cashipro
+# CashiPro - Crypto Exchange Platform
 
-Professional Cryptocurrency Exchange Platform
+## 🚀 Features
+- Spot Trading
+- Real-time Order Book
+- Market Data
+- Wallet Management
+- Secure Authentication
 
-## Structure
-- Monorepo based on Turborepo
-- Next.js Web App
-- Multiple Microservices
+## 🛠️ Tech Stack
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Zustand
+- Vercel
+
+## 📦 Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
