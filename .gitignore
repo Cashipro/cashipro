@@ -1,6 +1,28 @@
+# dependencies
 node_modules
+.pnpm-store
+
+# next.js
 .next
+out
 dist
+.vercel
+
+# env
 .env
 .env.local
-.turbo
+.env.production
+
+# logs
+*.log
+npm-debug.log*
+
+# os
+.DS_Store
+Thumbs.db
+
+# ide
+.vscode
+.idea
+*.swp
+*.swo
