@@ -2,89 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0a0b0e;
-  --surface: #1a1b1e;
-  --border: #2a2b2e;
-}
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html, body {
-  height: 100%;
-  background: var(--background);
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+body {
+  background: #0a0b0e;
+  color: #eaecef;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
+  background: #474d57;
+  border-radius: 2px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #5e6673;
 }
 
-/* iPad touch-friendly */
-button, a, input, select, textarea {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+/* Binance Colors */
+.bg-buy {
+  background: #0ecb81;
+}
+.bg-sell {
+  background: #f6465d;
+}
+.text-buy {
+  color: #0ecb81;
+}
+.text-sell {
+  color: #f6465d;
+}
+.border-buy {
+  border-color: #0ecb81;
+}
+.border-sell {
+  border-color: #f6465d;
+}
+.hover-buy:hover {
+  background: #0ecb81;
+}
+.hover-sell:hover {
+  background: #f6465d;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(30, 32, 38, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Card Hover */
+.card-hover {
+  transition: all 0.2s ease;
+}
+.card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Animations */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Glass effect */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Trading colors */
-.bid-color {
-  color: #10b981;
-}
-
-.ask-color {
-  color: #ef4444;
-}
-
-.bid-bg {
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.ask-bg {
-  background: rgba(239, 68, 68, 0.1);
+  animation: fadeIn 0.3s ease-out;
 }
