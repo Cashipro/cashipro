@@ -1,291 +1,188 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import React, { useState } from 'react';
 
-export default function CashiProTradePage() {
-  const params = useParams();
-  const pair = (params.pair as string) || "BTCUSDT";
-  
-  const [activeTimeframe, setActiveTimeframe] = useState("15m");
-  const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [orderMode, setOrderMode] = useState<"limit" | "market" | "tpSl">("limit");
-
-  const currentPrice = 1.6667;
-  const priceChange = 0.59;
-
-  const orderBookAsks = [
-    { price: 1.6699, amount: 1462.09, total: 2441.54 },
-    { price: 1.6698, amount: 151.95, total: 253.72 },
-    { price: 1.6695, amount: 288.71, total: 482.00 },
-    { price: 1.6690, amount: 263.03, total: 438.99 },
-    { price: 1.6687, amount: 279.26, total: 466.00 },
-  ];
-
-  const orderBookBids = [
-    { price: 1.6666, amount: 1462.09, total: 2441.54 },
-    { price: 1.6665, amount: 151.95, total: 253.72 },
-    { price: 1.6663, amount: 288.71, total: 482.00 },
-    { price: 1.6658, amount: 263.03, total: 438.99 },
-    { price: 1.6653, amount: 279.26, total: 466.00 },
-  ];
-
-  const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+export default function CashiproSpotTrading() {
+  const [side, setSide] = useState<'buy' | 'sell'>('buy');
+  const [orderMode, setOrderMode] = useState<'limit' | 'market' | 'tpSl'>('limit');
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans">
-      {/* Top Nav - CashiPro Branding */}
+      {/* Top Nav - Cashipro */}
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-xl font-bold text-black">C</div>
-            <span className="font-bold text-2xl text-white">CashiPro</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-xl font-bold">C</div>
+            <span className="font-bold text-2xl tracking-tight">Cashipro</span>
+          </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="/markets" className="text-gray-400 hover:text-yellow-400">Markets</Link>
-            <Link href="/trade/BTCUSDT" className="text-yellow-400 border-b-2 border-yellow-400 pb-1">Spot</Link>
-            <Link href="/futures" className="text-gray-400 hover:text-yellow-400">Futures</Link>
-            <Link href="/earn" className="text-gray-400 hover:text-yellow-400">Earn</Link>
-            <Link href="/events" className="text-gray-400 hover:text-yellow-400">Event Center</Link>
-            <Link href="/rewards" className="text-gray-400 hover:text-yellow-400">Rewards Hub</Link>
+          <nav className="flex items-center gap-6 text-sm">
+            <span>Buy Crypto</span>
+            <span>Markets</span>
+            <span className="text-blue-400">Spot</span>
+            <span>Futures</span>
+            <span>Earn</span>
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex bg-gray-900 rounded px-3 py-1 text-sm text-gray-300">🔍 ONDO</div>
-          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">Wallets</Link>
-          <Link href="/login">
-            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 cursor-pointer">👤</div>
-          </Link>
-          <button className="md:hidden text-2xl text-white">☰</button>
+          <div className="bg-gray-900 px-4 py-1.5 rounded-full text-sm">🔍 Search</div>
+          <div className="text-sm">Wallets</div>
+          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer">👤</div>
         </div>
       </div>
 
       {/* Pair Header */}
-      <div className="bg-[#111111] border-b border-gray-700 px-6 py-4 flex flex-wrap items-center gap-6 md:gap-10">
+      <div className="bg-[#111] border-b border-gray-700 px-6 py-4 flex items-center gap-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center text-3xl text-black">C</div>
+          <div className="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold">MX</div>
           <div>
-            <div className="text-3xl font-bold text-white">{pair}</div>
-            <div className="text-gray-400 text-sm">CashiPro Token</div>
+            <div className="text-3xl font-bold">MX/USDT</div>
+            <div className="text-sm text-gray-400">MX Token</div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-6 md:gap-12">
+        <div className="flex items-center gap-12 text-lg">
           <div>
-            <div className="text-4xl font-mono font-semibold text-green-400">
-              {currentPrice.toFixed(4)}
-            </div>
-            <div className="text-green-400">+{priceChange}%</div>
+            <span className="text-4xl font-mono">1.6667</span>
+            <span className="text-green-400 ml-3 text-xl">+0.59%</span>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-sm">
-            <div>
-              <div className="text-gray-500 text-xs">24H High</div>
-              <div className="text-white">1.6700</div>
-            </div>
-            <div>
-              <div className="text-gray-500 text-xs">24H Low</div>
-              <div className="text-white">1.6537</div>
-            </div>
-            <div>
-              <div className="text-gray-500 text-xs">24H Volume</div>
-              <div className="text-white">1.15M</div>
-            </div>
-            <div>
-              <div className="text-gray-500 text-xs">24H Amount</div>
-              <div className="text-white">1.91M</div>
-            </div>
+          <div className="text-sm space-x-8">
+            <span>24H High <span className="font-mono text-white">1.6700</span></span>
+            <span>24H Low <span className="font-mono text-white">1.6537</span></span>
+            <span>Vol(MX) <span className="font-mono text-white">1.15M</span></span>
           </div>
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        {/* Chart Area */}
-        <div className="flex-1 flex flex-col border-r border-gray-800">
-          {/* Chart Tabs */}
-          <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 md:px-6 py-3 gap-2">
-            <div className="flex gap-4 md:gap-8 text-sm">
-              <span className="text-yellow-400 border-b-2 border-yellow-400 pb-3">Chart</span>
+      <div className="flex h-[calc(100vh-135px)]">
+        {/* Chart Area - Left Side */}
+        <div className="flex-[2] flex flex-col border-r border-gray-800">
+          <div className="px-6 py-3 border-b border-gray-800 flex items-center justify-between">
+            <div className="flex gap-8">
+              <span className="text-blue-400 border-b-2 border-blue-400 pb-3">Chart</span>
               <span className="text-gray-400">Info</span>
               <span className="text-gray-400">Trading Data</span>
             </div>
 
-            <div className="flex flex-wrap gap-1 text-sm">
-              {timeframes.map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`px-2 md:px-3 py-1 rounded text-xs md:text-sm ${
-                    activeTimeframe === tf ? "bg-yellow-500 text-black" : "hover:bg-gray-800 text-gray-400"
-                  }`}
-                >
-                  {tf}
-                </button>
+            <div className="flex gap-1.5 text-sm">
+              {['1m','5m','15m','30m','1H','4H','1D'].map(t => (
+                <div key={t} className={`px-4 py-1 rounded cursor-pointer hover:bg-gray-800 ${t === '15m' ? 'bg-blue-600' : ''}`}>
+                  {t}
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Chart */}
-          <div className="flex-1 bg-[#0F1217] relative p-4 min-h-[200px]">
-            <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-2xl">
-              📊 {pair} Candlestick Chart (Live)
+          {/* Chart Placeholder */}
+          <div className="flex-1 bg-[#0C0F14] relative flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-7xl mb-6 opacity-20">📈</div>
+              <p className="text-gray-500 text-xl">MX/USDT 15m Chart</p>
+              <p className="text-xs text-gray-600 mt-2">Candlestick + MA5, MA10, MA20</p>
             </div>
-            
-            <div className="absolute bottom-12 left-10 right-10 h-[280px] border border-gray-700 rounded">
-              <div className="h-full w-full bg-gradient-to-t from-green-500/10 to-transparent relative overflow-hidden">
-                <div className="absolute bottom-10 left-[20%] w-6 h-32 bg-green-500"></div>
-                <div className="absolute bottom-20 left-[30%] w-6 h-24 bg-red-500"></div>
-                <div className="absolute bottom-12 left-[45%] w-6 h-40 bg-green-500"></div>
-                <div className="absolute bottom-8 left-[55%] w-6 h-28 bg-green-500"></div>
-                <div className="absolute bottom-24 left-[70%] w-6 h-[220px] bg-green-500"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Indicators */}
-          <div className="bg-[#111] p-3 text-xs border-t border-gray-700 flex flex-wrap gap-4 md:gap-8">
-            <div>VOL <span className="text-white">81.3700</span></div>
-            <div>VOL(USDT) <span className="text-white">135.6166K</span></div>
-            <div>MA5 <span className="text-yellow-400">1.6674</span></div>
-            <div>MA10 <span className="text-purple-400">1.6679</span></div>
-            <div>MA20 <span className="text-blue-400">1.6652</span></div>
           </div>
         </div>
 
-        {/* Right Panel - Order Book + Trade */}
-        <div className="w-full lg:w-[420px] flex flex-col border-l border-gray-800 bg-[#0A0A0A]">
+        {/* RIGHT SIDE - FIXED & IMPROVED */}
+        <div className="w-[460px] flex flex-col bg-[#0A0A0A] border-l border-gray-800">
+          
           {/* Order Book */}
-          <div className="flex-1 overflow-auto">
-            <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-              <div className="flex gap-6">
-                <span className="text-yellow-400 font-medium">Order Book</span>
-                <span className="text-gray-400">Market Trades</span>
-              </div>
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-700 flex items-center">
+              <div className="text-blue-400 font-medium">Order Book</div>
+              <div className="ml-auto text-xs text-gray-400">0.0001 ▼</div>
             </div>
 
-            {/* Asks */}
-            <div className="px-4 pt-2 text-red-400 text-sm">
-              <div className="grid grid-cols-3 text-xs text-gray-500 mb-1">
+            {/* Asks (Sell) */}
+            <div className="px-4 text-xs bg-[#111] pt-2">
+              <div className="grid grid-cols-3 text-gray-500 mb-1 text-[10px]">
                 <div>Price (USDT)</div>
-                <div className="text-right">Amount</div>
-                <div className="text-right">Total</div>
+                <div className="text-right">Amount (MX)</div>
+                <div className="text-right">Total (USDT)</div>
               </div>
-              {orderBookAsks.map((item, i) => (
-                <div key={i} className="grid grid-cols-3 py-1 hover:bg-gray-900">
-                  <div>{item.price}</div>
-                  <div className="text-right text-gray-400">{item.amount}</div>
-                  <div className="text-right text-gray-400">{item.total}</div>
+              {[
+                [1.6699, "1,462.09", "2,441.54"],
+                [1.6698, "151.95", "253.72"],
+                [1.6695, "288.71", "482.00"],
+                [1.6690, "263.03", "438.99"],
+                [1.6687, "279.26", "466.00"]
+              ].map(([price, amt, total], i) => (
+                <div key={i} className="grid grid-cols-3 py-[3px] text-sm hover:bg-red-500/10 text-red-400">
+                  <div>{price}</div>
+                  <div className="text-right text-gray-300">{amt}</div>
+                  <div className="text-right text-gray-300">{total}</div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-[#1A1A1A] py-4 text-center text-2xl font-bold border-y border-gray-700 text-white">
-              {currentPrice.toFixed(4)} <span className="text-green-400 text-xl">↑</span>
+            {/* Current Price */}
+            <div className="bg-[#1C1C1C] py-5 text-center border-y border-gray-700">
+              <div className="text-3xl font-bold">1.6667</div>
+              <div className="text-green-400 text-sm">↑ $1.66</div>
             </div>
 
-            {/* Bids */}
-            <div className="px-4 pb-2 text-green-400 text-sm">
-              {orderBookBids.map((item, i) => (
-                <div key={i} className="grid grid-cols-3 py-1 hover:bg-gray-900">
-                  <div>{item.price}</div>
-                  <div className="text-right text-gray-400">{item.amount}</div>
-                  <div className="text-right text-gray-400">{item.total}</div>
+            {/* Bids (Buy) */}
+            <div className="px-4 text-xs flex-1 overflow-auto">
+              {[
+                [1.6666, "759.70", "1,266.04"],
+                [1.6665, "269.46", "449.00"],
+                [1.6663, "256.93", "427.99"],
+                [1.6658, "1,242.57", "2,069.25"],
+                [1.6653, "273.24", "454.99"]
+              ].map(([price, amt, total], i) => (
+                <div key={i} className="grid grid-cols-3 py-[3px] text-sm hover:bg-green-500/10 text-green-400">
+                  <div>{price}</div>
+                  <div className="text-right text-gray-300">{amt}</div>
+                  <div className="text-right text-gray-300">{total}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Trade Panel */}
-          <div className="border-t border-gray-700 bg-[#111] p-4">
-            <div className="flex gap-px bg-gray-900 rounded-lg p-1 mb-4">
-              <button
-                onClick={() => setSide("buy")}
-                className={`flex-1 py-3 rounded-lg font-semibold ${
-                  side === "buy" ? "bg-green-500 text-black" : "text-gray-400"
-                }`}
+          {/* Trading Panel */}
+          <div className="border-t border-gray-700 bg-[#111] p-5">
+            <div className="flex rounded-xl overflow-hidden mb-4 bg-gray-900">
+              <button 
+                onClick={() => setSide('buy')}
+                className={`flex-1 py-3 text-lg font-bold ${side === 'buy' ? 'bg-green-500 text-black' : 'text-gray-400'}`}
               >
                 Buy
               </button>
-              <button
-                onClick={() => setSide("sell")}
-                className={`flex-1 py-3 rounded-lg font-semibold ${
-                  side === "sell" ? "bg-red-500 text-white" : "text-gray-400"
-                }`}
+              <button 
+                onClick={() => setSide('sell')}
+                className={`flex-1 py-3 text-lg font-bold ${side === 'sell' ? 'bg-red-500 text-white' : 'text-gray-400'}`}
               >
                 Sell
               </button>
             </div>
 
-            <div className="flex gap-2 mb-4 text-sm">
-              {["limit", "market", "tpSl"].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setOrderMode(mode as any)}
-                  className={`flex-1 py-2 rounded ${
-                    orderMode === mode ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
-                  }`}
-                >
-                  {mode === "tpSl" ? "TP/SL" : mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
+            <div className="flex gap-2 mb-5 text-sm">
+              <button onClick={() => setOrderMode('limit')} className={`flex-1 py-2 rounded-lg ${orderMode === 'limit' ? 'bg-gray-700' : ''}`}>Limit</button>
+              <button onClick={() => setOrderMode('market')} className={`flex-1 py-2 rounded-lg ${orderMode === 'market' ? 'bg-gray-700' : ''}`}>Market</button>
+              <button onClick={() => setOrderMode('tpSl')} className={`flex-1 py-2 rounded-lg ${orderMode === 'tpSl' ? 'bg-gray-700' : ''}`}>TP/SL</button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <div className="text-xs text-gray-500 mb-1">Price (USDT)</div>
-                <input
-                  type="text"
-                  value={currentPrice.toFixed(4)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 font-mono text-white"
-                />
+                <div className="text-xs text-gray-400 mb-2">Price (USDT)</div>
+                <input type="text" defaultValue="1.6667" className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 font-mono text-lg" />
               </div>
 
               <div>
-                <div className="text-xs text-gray-500 mb-1">Amount</div>
-                <input
-                  type="text"
-                  placeholder="0"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 font-mono text-white"
-                />
+                <div className="text-xs text-gray-400 mb-2">Amount (MX)</div>
+                <input type="text" placeholder="0.00" className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 font-mono text-lg" />
               </div>
 
-              <div className="h-2 bg-gray-700 rounded-full relative">
-                <div className="absolute left-0 top-0 h-2 bg-green-500 rounded-full w-1/3"></div>
+              <div className="pt-2">
+                <button 
+                  className={`w-full py-4 rounded-2xl text-xl font-bold transition-all ${side === 'buy' ? 'bg-green-500 hover:bg-green-600 text-black' : 'bg-red-500 hover:bg-red-600'}`}
+                >
+                  {side === 'buy' ? 'Buy MX' : 'Sell MX'}
+                </button>
               </div>
-
-              <button
-                className={`w-full py-4 rounded-2xl text-lg font-bold ${
-                  side === "buy"
-                    ? "bg-green-500 hover:bg-green-600 text-black"
-                    : "bg-red-500 hover:bg-red-600 text-white"
-                }`}
-              >
-                {side === "buy" ? `Buy ${pair.replace("USDT", "")}` : `Sell ${pair.replace("USDT", "")}`}
-              </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="h-52 bg-[#0F1117] border-t border-gray-700 p-4 flex flex-col">
-        <div className="flex gap-4 md:gap-8 border-b border-gray-700 pb-3 text-sm overflow-x-auto">
-          <span className="border-b-2 border-yellow-400 pb-3 text-yellow-400 whitespace-nowrap">Open Orders(0)</span>
-          <span className="text-gray-400 whitespace-nowrap">Order History</span>
-          <span className="text-gray-400 whitespace-nowrap">Trade History</span>
-          <span className="text-gray-400 whitespace-nowrap">Holdings(1)</span>
-        </div>
-        <div className="flex-1 flex items-center justify-center flex-col text-gray-500">
-          <p>Deposit now to start your trading journey</p>
-          <Link href="/deposit">
-            <button className="mt-4 bg-yellow-500 hover:bg-yellow-400 px-8 py-3 rounded-full text-black font-semibold">
-              Deposit
-            </button>
-          </Link>
         </div>
       </div>
     </div>
