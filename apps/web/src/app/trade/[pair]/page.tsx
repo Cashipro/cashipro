@@ -10,6 +10,28 @@ const Chart = dynamic(
   { ssr: false }
 );
 
+// ===== TYPE DEFINITIONS =====
+interface CandleData {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+interface Order {
+  price: number;
+  amount: number;
+}
+
+interface Trade {
+  buyOrderId: number;
+  sellOrderId: number;
+  price: number;
+  amount: number;
+  timestamp: Date;
+}
+
 export default function TradePage() {
   const params = useParams();
   const pair = (params.pair as string) || "BTCUSDT";
@@ -24,17 +46,17 @@ export default function TradePage() {
   // ===== REAL DATA STATE =====
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
-  const [orderBook, setOrderBook] = useState({ bids: [], asks: [] });
-  const [chartData, setChartData] = useState([]);
-  const [trades, setTrades] = useState([]);
+  const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
+  const [chartData, setChartData] = useState<CandleData[]>([]);
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
 
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
   // ===== GENERATE MOCK CHART DATA =====
-  const generateMockChartData = (count: number) => {
-    const data = [];
+  const generateMockChartData = (count: number): CandleData[] => {
+    const data: CandleData[] = [];
     let price = 65000;
     const now = Date.now();
     for (let i = count; i > 0; i--) {
@@ -61,7 +83,6 @@ export default function TradePage() {
       if (data.data && data.data.length > 0) {
         setChartData(data.data);
       } else {
-        // Agar API se data nahi aaya toh mock data use karo
         setChartData(generateMockChartData(100));
       }
     } catch (error) {
@@ -81,9 +102,8 @@ export default function TradePage() {
           setPrice(data.orderBook.bids[0].price);
         }
       } else {
-        // Mock order book
-        const bids = [];
-        const asks = [];
+        const bids: Order[] = [];
+        const asks: Order[] = [];
         const basePrice = price;
         for (let i = 0; i < 8; i++) {
           bids.push({
@@ -147,7 +167,6 @@ export default function TradePage() {
     };
     loadData();
 
-    // Real-time updates
     const interval = setInterval(() => {
       setPrice(prev => {
         const change = (Math.random() - 0.5) * 50;
@@ -443,8 +462,9 @@ export default function TradePage() {
 
             <button
               onClick={() => {
-                const priceInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-                const amountInput = document.querySelectorAll('input[type="text"]')[1] as HTMLInputElement;
+                const inputs = document.querySelectorAll('input[type="text"]');
+                const priceInput = inputs[0] as HTMLInputElement;
+                const amountInput = inputs[1] as HTMLInputElement;
                 const p = parseFloat(priceInput?.value.replace(/,/g, "") || "0");
                 const a = parseFloat(amountInput?.value || "0");
                 if (p > 0 && a > 0) {
