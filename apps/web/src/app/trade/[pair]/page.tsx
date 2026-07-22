@@ -12,9 +12,15 @@ export default function MexcStyleTradePage() {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderMode, setOrderMode] = useState<"limit" | "market" | "tpSl">("limit");
   const [activeTimeframe, setActiveTimeframe] = useState("15m");
+  const [showTPSL, setShowTPSL] = useState(false);
+  const [showTimeframes, setShowTimeframes] = useState(false);
 
   const currentPrice = 1.6667;
   const priceChange = 0.59;
+
+  // Timeframes with dropdown
+  const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
+  const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
   const orderBookAsks = [
     { price: 1.6699, amount: "1,462.09", total: "2,441.54" },
@@ -43,8 +49,6 @@ export default function MexcStyleTradePage() {
     { price: 1.6641, amount: "258.40", total: "430.00" },
     { price: 1.6638, amount: "253.64", total: "422.00" },
   ];
-
-  const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
@@ -110,8 +114,10 @@ export default function MexcStyleTradePage() {
               <span className="text-gray-400">Trading Data</span>
               <span className="text-gray-400">Compare</span>
             </div>
-            <div className="flex flex-wrap gap-1 text-xs">
-              {timeframes.map((tf) => (
+
+            {/* Timeframes with Dropdown Arrow */}
+            <div className="flex items-center gap-1 text-xs">
+              {visibleTimeframes.map((tf) => (
                 <button
                   key={tf}
                   onClick={() => setActiveTimeframe(tf)}
@@ -124,6 +130,30 @@ export default function MexcStyleTradePage() {
                   {tf}
                 </button>
               ))}
+              <button
+                onClick={() => setShowTimeframes(!showTimeframes)}
+                className="px-1.5 py-1 text-gray-400 hover:text-white transition"
+              >
+                ▼
+              </button>
+              {showTimeframes && (
+                <div className="absolute top-full right-0 mt-1 bg-[#1A1A1A] border border-gray-700 rounded-lg p-1 z-10 min-w-[60px]">
+                  {timeframes.map((tf) => (
+                    <button
+                      key={tf}
+                      onClick={() => {
+                        setActiveTimeframe(tf);
+                        setShowTimeframes(false);
+                      }}
+                      className={`block w-full text-left px-3 py-1 text-xs rounded hover:bg-gray-800 transition ${
+                        activeTimeframe === tf ? "text-blue-400" : "text-gray-400"
+                      }`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -151,46 +181,39 @@ export default function MexcStyleTradePage() {
           </div>
         </div>
 
-        {/* RIGHT: Order Book (Chota) + Spot Section (Bara) — SIDE BY SIDE */}
+        {/* RIGHT: Order Book (Chota) + Spot Section (Bara) */}
         <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
-          {/* Order Book - Chota (Left) */}
-          <div className="w-[140px] flex flex-col border-r border-gray-700">
+          {/* Order Book - Chota */}
+          <div className="w-[120px] flex flex-col border-r border-gray-700">
             <div className="flex border-b border-gray-700 px-2 py-1.5">
               <span className="text-blue-400 border-b-2 border-blue-400 pb-1 text-[10px] font-medium">Order Book</span>
-              <span className="text-gray-400 ml-2 text-[10px]">Market</span>
             </div>
-
             <div className="flex-1 overflow-y-auto px-1.5">
-              <div className="grid grid-cols-3 text-[8px] text-gray-500 mb-0.5">
+              <div className="grid grid-cols-2 text-[8px] text-gray-500 mb-0.5">
                 <div>Price</div>
                 <div className="text-right">Amt</div>
-                <div className="text-right">Total</div>
               </div>
-              {orderBookAsks.slice(0, 8).map((item, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-3 text-[10px] py-0.5 hover:bg-red-500/10 text-red-400">
+              {orderBookAsks.slice(0, 6).map((item, i) => (
+                <div key={`ask-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-red-500/10 text-red-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
-                  <div className="text-right text-gray-300">{item.total}</div>
                 </div>
               ))}
-
-              <div className="bg-[#1C1C1C] py-1.5 text-center border-y border-gray-700 my-0.5">
+              <div className="bg-[#1C1C1C] py-1 text-center border-y border-gray-700 my-0.5">
                 <div className="text-xs font-bold text-white">{currentPrice.toFixed(4)}</div>
-                <div className="text-green-400 text-[8px]">↑ $1.66</div>
               </div>
-
-              {orderBookBids.slice(0, 8).map((item, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-3 text-[10px] py-0.5 hover:bg-green-500/10 text-green-400">
+              {orderBookBids.slice(0, 6).map((item, i) => (
+                <div key={`bid-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-green-500/10 text-green-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
-                  <div className="text-right text-gray-300">{item.total}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* SPOT SECTION - Bara (Right) */}
+          {/* SPOT SECTION - Bara (MEXC Style) */}
           <div className="flex-1 flex flex-col bg-[#111] p-3">
+            {/* Buy/Sell */}
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
@@ -210,49 +233,109 @@ export default function MexcStyleTradePage() {
               </button>
             </div>
 
-            <div className="flex gap-1 mb-2 text-xs">
-              {["limit", "market", "tpSl"].map((mode) => (
+            {/* Limit / Market / TP-SL */}
+            <div className="flex items-center gap-1 mb-2 text-xs">
+              <button
+                onClick={() => setOrderMode("limit")}
+                className={`px-3 py-1 rounded transition ${
+                  orderMode === "limit" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                }`}
+              >
+                Limit
+              </button>
+              <button
+                onClick={() => setOrderMode("market")}
+                className={`px-3 py-1 rounded transition ${
+                  orderMode === "market" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                }`}
+              >
+                Market
+              </button>
+              <button
+                onClick={() => setOrderMode("tpSl")}
+                className={`px-3 py-1 rounded transition ${
+                  orderMode === "tpSl" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                }`}
+              >
+                TP/SL
+              </button>
+
+              {/* TP/SL Toggle */}
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-[10px] text-gray-500">TP/SL</span>
                 <button
-                  key={mode}
-                  onClick={() => setOrderMode(mode as any)}
-                  className={`flex-1 py-1 rounded text-xs transition ${
-                    orderMode === mode ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                  onClick={() => setShowTPSL(!showTPSL)}
+                  className={`w-8 h-4 rounded-full transition ${
+                    showTPSL ? "bg-blue-500" : "bg-gray-700"
                   }`}
                 >
-                  {mode === "tpSl" ? "TP/SL" : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  <div
+                    className={`w-3 h-3 bg-white rounded-full transition transform ${
+                      showTPSL ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
                 </button>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <div className="text-[10px] text-gray-500">Price</div>
-                <input
-                  type="text"
-                  defaultValue={currentPrice.toFixed(4)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] text-gray-500">Amount</div>
-                <input
-                  type="text"
-                  placeholder="0"
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
               </div>
             </div>
 
-            <div className="flex gap-1 mt-1 text-xs">
-              {[25, 50, 75, 100].map((p) => (
+            {/* Price */}
+            <div className="mb-1.5">
+              <div className="flex justify-between text-[10px] text-gray-500">
+                <span>Price (USDT)</span>
+                <span>Available <span className="text-white">0.0142 USDT</span> ▼</span>
+              </div>
+              <input
+                type="text"
+                defaultValue={currentPrice.toFixed(4)}
+                className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Amount */}
+            <div className="mb-1.5">
+              <div className="text-[10px] text-gray-500">Amount (MX)</div>
+              <input
+                type="text"
+                placeholder="0"
+                className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Quick % buttons */}
+            <div className="flex gap-1 text-xs">
+              {[0, 25, 50, 75, 100].map((p) => (
                 <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
                   {p}%
                 </button>
               ))}
             </div>
 
-            <div className="text-xs text-gray-500 mt-1">Available 0.0142 USDT</div>
+            {/* Total */}
+            <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
 
+            {/* TP/SL Boxes (Toggle) */}
+            {showTPSL && (
+              <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
+                <div>
+                  <div className="text-[10px] text-gray-500">TP trigger price (USDT)</div>
+                  <input
+                    type="text"
+                    placeholder="1.7000"
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500">SL trigger price (USDT)</div>
+                  <input
+                    type="text"
+                    placeholder="1.6300"
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Buy Button */}
             <button
               className={`w-full mt-2 py-3 rounded-xl text-base font-bold transition ${
                 side === "buy"
@@ -262,6 +345,11 @@ export default function MexcStyleTradePage() {
             >
               {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
             </button>
+
+            {/* Highest Bid */}
+            <div className="text-[10px] text-gray-500 text-center mt-1">
+              Highest Bid <span className="text-green-400">1.7507 USDT</span>
+            </div>
           </div>
         </div>
       </div>
