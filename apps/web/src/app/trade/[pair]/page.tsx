@@ -1,455 +1,547 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
-// ===== COINS LIST — BINANCE SE (FREE, NO API KEY) =====
-const POPULAR_COINS = [
-  "BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "DOT", 
-  "MATIC", "LINK", "AVAX", "UNI", "ATOM", "ETC", "FIL", 
-  "LTC", "BCH", "NEAR", "APT", "ARB", "OP", "SUI", "SEI",
-  "INJ", "RUNE", "AAVE", "MKR", "CRV", "GRT", "SAND", "MANA",
-  "CHZ", "GALA", "AXS", "FLOW", "THETA", "VET", "ICP", "EGLD",
-  "KAVA", "ZIL", "QTUM", "ONT", "XLM", "XTZ", "ALGO", "HBAR",
-];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
-// ===== BINANCE API ENDPOINTS =====
-const fetchPrice = async (symbol: string) => {
-  try {
-    const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
-    const data = await res.json();
-    return {
-      price: parseFloat(data.lastPrice),
-      change: parseFloat(data.priceChangePercent),
-      high: parseFloat(data.highPrice),
-      low: parseFloat(data.lowPrice),
-      volume: parseFloat(data.volume),
-    };
-  } catch (error) {
-    console.error("Error fetching price:", error);
-    return null;
-  }
+// ============================================================
+// 1. COINGECKO API — REAL COINS DATA
+// ============================================================
+const fetchCoins = async (page: number = 1) => {
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=false&price_change_percentage=24h`
+  );
+  return res.json();
 };
 
-// ===== CMC CHART =====
-function CMCChart({ symbol }: { symbol: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetId = `cmc-widget-${Date.now()}`;
+const fetchChartData = async (coinId: string, days: number = 1) => {
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`
+  );
+  const data = await res.json();
+  return data.prices.map((p: [number, number]) => ({
+    time: new Date(p[0]).toLocaleTimeString(),
+    price: p[1],
+  }));
+};
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.innerHTML = "";
-
-    const script = document.createElement("script");
-    script.src = "https://files.coinmarketcap.com/static/widget/coinPriceBlock.js";
-    script.async = true;
-
-    script.onload = () => {
-      if (containerRef.current) {
-        const widget = document.createElement("div");
-        widget.id = widgetId;
-        widget.setAttribute("coins", "1,1027,1839,5426,52");
-        widget.setAttribute("currency", "USD");
-        widget.setAttribute("theme", "dark");
-        widget.setAttribute("transparent", "false");
-        widget.setAttribute("show-symbol-logo", "true");
-        containerRef.current.appendChild(widget);
-      }
-    };
-
-    document.head.appendChild(script);
-    return () => { if (containerRef.current) containerRef.current.innerHTML = ""; };
-  }, [symbol]);
-
-  return <div ref={containerRef} className="w-full h-full min-h-[200px]" />;
+// ============================================================
+// 2. MAIN COMPONENT
+// ============================================================
+interface Coin {
+  id: string;
+  symbol: string;
+  name: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+  high_24h: number;
+  low_24h: number;
+  total_volume: number;
+  market_cap: number;
+  favorite?: boolean;
 }
 
-// ===== TYPE DEFINITIONS =====
-interface Order {
-  price: number;
-  amount: number;
-}
-
-export default function TradePage() {
-  const params = useParams();
-  const pair = (params.pair as string) || "BTCUSDT";
-  const displaySymbol = pair.replace("USDT", "");
-
-  const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
-  const [showTPSL, setShowTPSL] = useState(false);
-  const [showCoinSearch, setShowCoinSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTimeframe, setActiveTimeframe] = useState("15m");
-  const [showTimeframes, setShowTimeframes] = useState(false);
-
-  const [price, setPrice] = useState(0);
-  const [priceChange, setPriceChange] = useState(0);
-  const [high, setHigh] = useState(0);
-  const [low, setLow] = useState(0);
-  const [volume, setVolume] = useState(0);
+export default function SpotTradingPage() {
+  const [coins, setCoins] = useState<Coin[]>([]);
+  const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState<"all" | "favorites" | "gainers" | "losers">("all");
+  const [chartData, setChartData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const searchRef = useRef<HTMLDivElement>(null);
+  const [tradeType, setTradeType] = useState<"buy" | "sell">("buy");
+  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
+  const [price, setPrice] = useState(0);
+  const [amount, setAmount] = useState(0.01);
+  const [activeTab, setActiveTab] = useState<"chart" | "orderbook" | "trades">("chart");
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
   const wsRef = useRef<WebSocket | null>(null);
 
-  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
-  const visibleTimeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D"];
-
-  const filteredCoins = POPULAR_COINS.filter(c => 
-    c.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // ===== FETCH PRICE =====
-  const updatePrice = async () => {
-    const data = await fetchPrice(displaySymbol);
-    if (data) {
-      setPrice(data.price);
-      setPriceChange(data.change);
-      setHigh(data.high);
-      setLow(data.low);
-      setVolume(data.volume);
+  // ============================================================
+  // 3. FETCH COINS (PAGINATED — 1000+ COINS)
+  // ============================================================
+  const loadCoins = async () => {
+    try {
+      const data = await fetchCoins(page);
+      if (data.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      const coinsWithFavorite = data.map((coin: any) => ({
+        ...coin,
+        favorite: favorites.has(coin.id),
+      }));
+      setCoins((prev) => [...prev, ...coinsWithFavorite]);
+      if (!selectedCoin && coinsWithFavorite.length > 0) {
+        setSelectedCoin(coinsWithFavorite[0]);
+        setPrice(coinsWithFavorite[0].current_price);
+        loadChartData(coinsWithFavorite[0].id);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching coins:", error);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  // ===== REAL-TIME WEBSOCKET =====
-  useEffect(() => {
-    const symbol = pair.toLowerCase();
-    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@trade`;
-    
-    wsRef.current = new WebSocket(wsUrl);
+  // ============================================================
+  // 4. FETCH CHART DATA
+  // ============================================================
+  const loadChartData = async (coinId: string, days: number = 1) => {
+    try {
+      const data = await fetchChartData(coinId, days);
+      setChartData({
+        labels: data.map((d: any) => d.time),
+        datasets: [
+          {
+            label: "Price (USD)",
+            data: data.map((d: any) => d.price),
+            borderColor: tradeType === "buy" ? "#00ff9f" : "#ff4757",
+            backgroundColor: tradeType === "buy" 
+              ? "rgba(0, 255, 159, 0.1)" 
+              : "rgba(255, 71, 87, 0.1)",
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+    }
+  };
 
-    wsRef.current.onmessage = (event) => {
+  // ============================================================
+  // 5. WEBSOCKET — REAL-TIME PRICES
+  // ============================================================
+  useEffect(() => {
+    const symbols = coins.map((c) => c.id.toLowerCase()).join(",");
+    if (!symbols) return;
+
+    const ws = new WebSocket(`wss://ws.coincap.io/prices?assets=${symbols}`);
+
+    ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.p) {
-        setPrice(parseFloat(data.p));
+      setCoins((prev) =>
+        prev.map((coin) => {
+          const newPrice = data[coin.id];
+          if (newPrice) {
+            return { ...coin, current_price: parseFloat(newPrice) };
+          }
+          return coin;
+        })
+      );
+      // Update selected coin price
+      if (selectedCoin && data[selectedCoin.id]) {
+        setPrice(parseFloat(data[selectedCoin.id]));
       }
     };
 
-    wsRef.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+    wsRef.current = ws;
+    return () => ws.close();
+  }, [coins.map((c) => c.id).join(",")]);
 
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [pair]);
-
-  // ===== INITIAL LOAD =====
+  // ============================================================
+  // 6. INITIAL LOAD
+  // ============================================================
   useEffect(() => {
-    updatePrice();
-  }, [pair]);
+    loadCoins();
+  }, [page]);
 
-  // ===== CLOSE SEARCH =====
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowCoinSearch(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleCoinSelect = (coin: string) => {
-    setShowCoinSearch(false);
-    setSearchQuery("");
-    window.location.href = `/trade/${coin}USDT`;
+  // ============================================================
+  // 7. HANDLERS
+  // ============================================================
+  const handleCoinSelect = async (coin: Coin) => {
+    setSelectedCoin(coin);
+    setPrice(coin.current_price);
+    await loadChartData(coin.id);
   };
 
-  if (loading) {
+  const toggleFavorite = (coinId: string) => {
+    setFavorites((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(coinId)) newSet.delete(coinId);
+      else newSet.add(coinId);
+      return newSet;
+    });
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      setPage((p) => p + 1);
+    }
+  };
+
+  // ============================================================
+  // 8. FILTERS
+  // ============================================================
+  const filteredCoins = coins
+    .filter((coin) => {
+      const matchesSearch =
+        coin.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coin.name.toLowerCase().includes(searchTerm.toLowerCase());
+      if (activeFilter === "favorites") return matchesSearch && favorites.has(coin.id);
+      if (activeFilter === "gainers") return matchesSearch && coin.price_change_percentage_24h > 0;
+      if (activeFilter === "losers") return matchesSearch && coin.price_change_percentage_24h < 0;
+      return matchesSearch;
+    })
+    .sort((a, b) => b.market_cap - a.market_cap);
+
+  // ============================================================
+  // 9. RENDER
+  // ============================================================
+  if (loading && coins.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 border-r-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-400 mt-4">Loading {pair}...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-emerald-500 border-r-2 border-emerald-500 mx-auto"></div>
+          <p className="text-gray-400 mt-4">Loading 1000+ coins...</p>
+          <p className="text-xs text-gray-500 mt-2">Fetching real-time data from CoinGecko</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
-      {/* ===== TOP NAVBAR ===== */}
-      <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded flex items-center justify-center text-xl font-bold text-white">C</div>
-            <span className="font-bold text-2xl text-white">CashiPro</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-4 text-sm text-gray-300">
-            <Link href="/markets" className="hover:text-white">Markets</Link>
-            <Link href="/trade/BTCUSDT" className="text-blue-400">Spot</Link>
-            <Link href="/futures" className="hover:text-white">Futures</Link>
-            <Link href="/earn" className="hover:text-white">Earn</Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">Log In</Link>
-          <Link href="/register">
-            <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-full text-sm font-medium">Sign Up</button>
-          </Link>
-          <button className="md:hidden text-2xl text-white">☰</button>
-        </div>
-      </div>
-
-      {/* ===== PAIR HEADER ===== */}
-      <div className="bg-[#111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
-        <div className="flex items-center gap-3 relative" ref={searchRef}>
-          <div 
-            className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white cursor-pointer"
-            onClick={() => setShowCoinSearch(!showCoinSearch)}
-          >
-            {displaySymbol.slice(0, 2)}
+    <div className="flex h-screen bg-gray-950 text-white overflow-hidden font-sans">
+      {/* ===== SIDEBAR — COIN LIST ===== */}
+      <div className="w-72 bg-gray-900 border-r border-gray-800 flex flex-col">
+        {/* Header */}
+        <div className="p-5 border-b border-gray-800 flex items-center gap-3">
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center font-bold text-2xl">
+            C
           </div>
           <div>
-            <div 
-              className="text-2xl font-bold text-white cursor-pointer flex items-center gap-2"
-              onClick={() => setShowCoinSearch(!showCoinSearch)}
-            >
-              {pair}
-              <span className="text-xs text-gray-400">▼</span>
-            </div>
-            <div className="text-xs text-gray-500">{displaySymbol} / USDT</div>
+            <h1 className="text-2xl font-bold tracking-tighter">Cashipro</h1>
+            <p className="text-xs text-emerald-400">Spot Trading</p>
           </div>
+        </div>
 
-          {showCoinSearch && (
-            <div className="absolute top-full left-0 mt-2 bg-[#1A1A1A] border border-gray-700 rounded-xl p-3 z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
-              <input
-                type="text"
-                placeholder="Search coins..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                autoFocus
-              />
-              <div className="mt-2">
-                {filteredCoins.length > 0 ? (
-                  filteredCoins.map((coin) => (
-                    <button
-                      key={coin}
-                      onClick={() => handleCoinSelect(coin)}
-                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition"
-                    >
-                      {coin}/USDT
-                    </button>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 px-3 py-2">No coins found</p>
-                )}
-              </div>
-            </div>
+        {/* Search */}
+        <div className="p-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search 1000+ coins..."
+            className="w-full bg-gray-800 border border-gray-700 rounded-2xl py-3 px-5 focus:outline-none focus:border-emerald-500 text-sm"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="px-4 flex gap-1 mb-3">
+          {["all", "favorites", "gainers", "losers"].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter as any)}
+              className={`flex-1 py-2 text-xs rounded-xl transition-all ${
+                activeFilter === filter
+                  ? "bg-emerald-500 text-black font-medium"
+                  : "bg-gray-800 hover:bg-gray-700"
+              }`}
+            >
+              {filter === "all" ? "All" : filter.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Coin List */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-gray-900 border-b border-gray-800">
+              <tr className="text-gray-400 text-xs">
+                <th className="text-left pl-5 py-3 font-normal">Coin</th>
+                <th className="text-right py-3 font-normal">Price</th>
+                <th className="text-right pr-5 py-3 font-normal">24h</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCoins.map((coin) => (
+                <tr
+                  key={coin.id}
+                  onClick={() => handleCoinSelect(coin)}
+                  className={`border-b border-gray-800 hover:bg-gray-800 cursor-pointer transition-colors ${
+                    selectedCoin?.id === coin.id ? "bg-gray-800" : ""
+                  }`}
+                >
+                  <td className="pl-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-lg">
+                        {coin.symbol[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-medium">{coin.symbol.toUpperCase()}</div>
+                        <div className="text-xs text-gray-500">{coin.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="text-right font-mono py-4">
+                    ${coin.current_price?.toLocaleString() || "0"}
+                  </td>
+                  <td
+                    className={`text-right pr-5 py-4 font-medium ${
+                      coin.price_change_percentage_24h >= 0
+                        ? "text-emerald-400"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {coin.price_change_percentage_24h >= 0 ? "+" : ""}
+                    {coin.price_change_percentage_24h?.toFixed(2) || "0"}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hasMore && (
+            <button
+              onClick={handleLoadMore}
+              className="w-full py-4 text-sm text-gray-400 hover:text-white transition"
+            >
+              Load More Coins →
+            </button>
           )}
         </div>
-
-        <div className="flex flex-wrap items-center gap-6 md:gap-10">
-          <div>
-            <span className="text-3xl font-mono font-bold text-white">
-              {price > 0 ? price.toFixed(2).toLocaleString() : "---"}
-            </span>
-            <span className={`ml-2 text-lg ${priceChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-              {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
-            </span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-sm">
-            <div><span className="text-gray-500">24H High</span> <span className="text-white">{high > 0 ? high.toFixed(2) : "---"}</span></div>
-            <div><span className="text-gray-500">24H Low</span> <span className="text-white">{low > 0 ? low.toFixed(2) : "---"}</span></div>
-            <div><span className="text-gray-500">24H Vol</span> <span className="text-white">{volume > 0 ? volume.toLocaleString() : "---"}</span></div>
-            <div><span className="text-gray-500">24H Amount</span> <span className="text-white">---</span></div>
-          </div>
-        </div>
       </div>
 
-      {/* ===== MAIN LAYOUT ===== */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
-          <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
-            <div className="flex gap-4 text-sm">
-              <span className="text-blue-400 border-b-2 border-blue-400 pb-2">Chart</span>
-              <span className="text-gray-400">Info</span>
-              <span className="text-gray-400">Trading Data</span>
-              <span className="text-gray-400">Compare</span>
+      {/* ===== MAIN TRADING AREA ===== */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="h-16 border-b border-gray-800 bg-gray-900 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold">{selectedCoin?.symbol.toUpperCase()}</div>
+              <div className="text-emerald-400">/ USDT</div>
             </div>
+            <div>
+              <div className="text-3xl font-mono font-semibold">
+                ${selectedCoin?.current_price?.toLocaleString() || "0"}
+              </div>
+              <div
+                className={`text-sm ${
+                  (selectedCoin?.price_change_percentage_24h || 0) >= 0
+                    ? "text-emerald-400"
+                    : "text-red-500"
+                }`}
+              >
+                {(selectedCoin?.price_change_percentage_24h || 0) >= 0 ? "↑" : "↓"}{" "}
+                {selectedCoin?.price_change_percentage_24h?.toFixed(2) || "0"}%
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-8 text-sm">
+            <div>
+              High:{" "}
+              <span className="text-emerald-400">${selectedCoin?.high_24h?.toLocaleString() || "0"}</span>
+            </div>
+            <div>
+              Low:{" "}
+              <span className="text-red-500">${selectedCoin?.low_24h?.toLocaleString() || "0"}</span>
+            </div>
+            <div>
+              Vol:{" "}
+              <span className="font-medium">
+                ${((selectedCoin?.total_volume || 0) / 1e6).toFixed(2)}M
+              </span>
+            </div>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-1 text-xs relative">
-              {visibleTimeframes.map((tf) => (
+        {/* Chart Area */}
+        <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col">
+            {/* Tabs */}
+            <div className="border-b border-gray-800 flex">
+              {["chart", "orderbook", "trades"].map((tab) => (
                 <button
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`px-2 py-1 rounded transition ${activeTimeframe === tf ? "bg-blue-600 text-white" : "text-gray-400 hover:bg-gray-800"}`}
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`px-8 py-4 border-b-2 transition-all ${
+                    activeTab === tab
+                      ? "border-emerald-500 text-white"
+                      : "border-transparent text-gray-400 hover:text-gray-200"
+                  }`}
                 >
-                  {tf}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
-              <button
-                onClick={() => setShowTimeframes(!showTimeframes)}
-                className="px-1.5 py-1 text-gray-400 hover:text-white transition"
-              >
-                ▼
-              </button>
-              {showTimeframes && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1A1A1A] border border-gray-700 rounded-lg p-1 z-10 min-w-[60px]">
-                  {timeframes.map((tf) => (
-                    <button
-                      key={tf}
-                      onClick={() => { setActiveTimeframe(tf); setShowTimeframes(false); }}
-                      className={`block w-full text-left px-3 py-1 text-xs rounded hover:bg-gray-800 transition ${activeTimeframe === tf ? "text-blue-400" : "text-gray-400"}`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
+            </div>
+
+            <div className="flex-1 p-6 bg-black/30">
+              {activeTab === "chart" && chartData && (
+                <div className="h-full">
+                  <Line
+                    data={chartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: {
+                        y: {
+                          grid: { color: "#1f2937" },
+                          ticks: { color: "#6b7280" },
+                        },
+                        x: {
+                          grid: { color: "#1f2937" },
+                          ticks: { color: "#6b7280", maxTicksLimit: 12 },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              )}
+
+              {activeTab === "orderbook" && (
+                <div className="grid grid-cols-2 gap-6 h-full">
+                  {/* Buy Orders */}
+                  <div>
+                    <h3 className="text-emerald-400 mb-3 font-medium">Buy Orders</h3>
+                    <div className="space-y-1 text-sm font-mono">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between bg-gray-900/50 px-4 py-2 rounded-lg"
+                        >
+                          <span>
+                            {(selectedCoin?.current_price || 0) - 5 + i * 2}
+                          </span>
+                          <span className="text-emerald-400">{(Math.random() * 10 + 1).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Sell Orders */}
+                  <div>
+                    <h3 className="text-red-500 mb-3 font-medium">Sell Orders</h3>
+                    <div className="space-y-1 text-sm font-mono">
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between bg-gray-900/50 px-4 py-2 rounded-lg"
+                        >
+                          <span>
+                            {(selectedCoin?.current_price || 0) + 5 - i * 2}
+                          </span>
+                          <span className="text-red-500">{(Math.random() * 10 + 1).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex-1 bg-[#0F1217] p-2 min-h-[250px]">
-            <CMCChart symbol={displaySymbol} />
-          </div>
-
-          <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
-            <div>VOL <span className="text-white">108.91</span></div>
-            <div>VOL(USDT) <span className="text-white">181.51K</span></div>
-            <div>MA5 <span className="text-yellow-400">65,200</span></div>
-            <div>MA10 <span className="text-purple-400">65,100</span></div>
-            <div>MA20 <span className="text-blue-400">65,000</span></div>
-          </div>
-        </div>
-
-        {/* ===== ORDER BOOK + SPOT ===== */}
-        <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
-          <div className="w-[120px] flex flex-col border-r border-gray-700">
-            <div className="flex border-b border-gray-700 px-2 py-1.5">
-              <span className="text-blue-400 border-b-2 border-blue-400 pb-1 text-[10px] font-medium">Order Book</span>
-            </div>
-            <div className="flex-1 overflow-y-auto px-1.5">
-              <div className="grid grid-cols-2 text-[8px] text-gray-500 mb-0.5">
-                <div>Price</div>
-                <div className="text-right">Amt</div>
-              </div>
-              {[...Array(6)].map((_, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-red-500/10 text-red-400">
-                  <div>{(price * (1 + (i + 1) * 0.001)).toFixed(2)}</div>
-                  <div className="text-right text-gray-300">{(Math.random() * 2 + 0.1).toFixed(4)}</div>
-                </div>
-              ))}
-              <div className="bg-[#1C1C1C] py-1 text-center border-y border-gray-700 my-0.5">
-                <div className="text-xs font-bold text-white">{price > 0 ? price.toFixed(2) : "---"}</div>
-              </div>
-              {[...Array(6)].map((_, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-green-500/10 text-green-400">
-                  <div>{(price * (1 - (i + 1) * 0.001)).toFixed(2)}</div>
-                  <div className="text-right text-gray-300">{(Math.random() * 2 + 0.1).toFixed(4)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ===== SPOT SECTION ===== */}
-          <div className="flex-1 flex flex-col bg-[#111] p-3">
-            <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
-              <button
-                onClick={() => setSide("buy")}
-                className={`flex-1 py-2 text-sm font-bold transition ${side === "buy" ? "bg-green-500 text-black" : "text-gray-400"}`}
-              >
-                Buy
-              </button>
-              <button
-                onClick={() => setSide("sell")}
-                className={`flex-1 py-2 text-sm font-bold transition ${side === "sell" ? "bg-red-500 text-white" : "text-gray-400"}`}
-              >
-                Sell
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 mb-2 text-xs">
-              <button onClick={() => setOrderType("limit")} className={`px-3 py-1 rounded transition ${orderType === "limit" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"}`}>Limit</button>
-              <button onClick={() => setOrderType("market")} className={`px-3 py-1 rounded transition ${orderType === "market" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"}`}>Market</button>
-              <button onClick={() => setOrderType("tpSl")} className={`px-3 py-1 rounded transition ${orderType === "tpSl" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"}`}>TP/SL</button>
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-[10px] text-gray-500">TP/SL</span>
+          {/* ===== TRADE PANEL ===== */}
+          <div className="w-96 border-l border-gray-800 bg-gray-900 flex flex-col">
+            <div className="p-5 border-b border-gray-800">
+              <div className="flex bg-gray-800 rounded-2xl p-1">
                 <button
-                  onClick={() => setShowTPSL(!showTPSL)}
-                  className={`w-8 h-4 rounded-full transition ${showTPSL ? "bg-blue-500" : "bg-gray-700"}`}
+                  onClick={() => setTradeType("buy")}
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                    tradeType === "buy" ? "bg-emerald-500 text-black" : ""
+                  }`}
                 >
-                  <div className={`w-3 h-3 bg-white rounded-full transition transform ${showTPSL ? "translate-x-4" : "translate-x-0.5"}`} />
+                  BUY
+                </button>
+                <button
+                  onClick={() => setTradeType("sell")}
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                    tradeType === "sell" ? "bg-red-500 text-white" : ""
+                  }`}
+                >
+                  SELL
                 </button>
               </div>
             </div>
 
-            <div className="mb-1.5">
-              <div className="flex justify-between text-[10px] text-gray-500">
-                <span>Price (USDT)</span>
-                <span>Available <span className="text-white">0.0142 USDT</span></span>
-              </div>
-              <input
-                type="text"
-                defaultValue={price > 0 ? price.toFixed(2) : "0"}
-                className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-
-            <div className="mb-1.5">
-              <div className="text-[10px] text-gray-500">Amount</div>
-              <input type="text" placeholder="0" className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-            </div>
-
-            <div className="flex gap-1 text-xs">
-              {[0, 25, 50, 75, 100].map((p) => (
-                <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">{p}%</button>
-              ))}
-            </div>
-
-            <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
-
-            {showTPSL && (
-              <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
-                <div>
-                  <div className="text-[10px] text-gray-500">TP trigger price (USDT)</div>
-                  <input type="text" placeholder={(price * 1.02).toFixed(2)} className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                  <div className="text-[10px] text-gray-500">SL trigger price (USDT)</div>
-                  <input type="text" placeholder={(price * 0.98).toFixed(2)} className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500" />
+            <div className="p-5 space-y-6 flex-1">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Order Type</label>
+                <div className="flex gap-2">
+                  {["limit", "market"].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setOrderType(t as any)}
+                      className={`flex-1 py-2.5 rounded-xl text-sm ${
+                        orderType === t ? "bg-gray-700" : "bg-gray-800"
+                      }`}
+                    >
+                      {t.toUpperCase()}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            <button
-              onClick={() => {
-                const inputs = document.querySelectorAll('input[type="text"]');
-                const priceInput = inputs[0] as HTMLInputElement;
-                const amountInput = inputs[1] as HTMLInputElement;
-                const p = parseFloat(priceInput?.value.replace(/,/g, "") || "0");
-                const a = parseFloat(amountInput?.value || "0");
-                if (p > 0 && a > 0) {
-                  alert(`Order placed: ${side} ${displaySymbol} @ ${p} x ${a}`);
-                } else {
-                  alert("Please enter valid price and amount");
-                }
-              }}
-              className={`w-full mt-2 py-3 rounded-xl text-base font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}
-            >
-              {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
-            </button>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Price (USDT)</label>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(parseFloat(e.target.value))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-lg font-mono focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">
+                  Amount ({selectedCoin?.symbol.toUpperCase()})
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(parseFloat(e.target.value))}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-lg font-mono focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-gray-800">
+                <div className="flex justify-between text-sm mb-4">
+                  <span className="text-gray-400">Total</span>
+                  <span className="font-medium">${(price * amount).toFixed(2)}</span>
+                </div>
+
+                <button
+                  onClick={() =>
+                    alert(
+                      `Order placed: ${tradeType.toUpperCase()} ${amount} ${selectedCoin?.symbol.toUpperCase()} @ $${price}`
+                    )
+                  }
+                  className={`w-full py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 ${
+                    tradeType === "buy"
+                      ? "bg-emerald-500 hover:bg-emerald-600 text-black"
+                      : "bg-red-500 hover:bg-red-600"
+                  }`}
+                >
+                  {tradeType === "buy" ? "BUY" : "SELL"} {selectedCoin?.symbol.toUpperCase()}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-2 flex flex-wrap items-center justify-between text-sm">
-        <div className="flex gap-4 overflow-x-auto">
-          <span className="text-blue-400 border-b-2 border-blue-400 pb-1 whitespace-nowrap">Open Orders(0)</span>
-          <span className="text-gray-400 whitespace-nowrap">Order History</span>
-          <span className="text-gray-400 whitespace-nowrap">Trade History</span>
-          <span className="text-gray-400 whitespace-nowrap">Holdings(1)</span>
-        </div>
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span>Maker 0.0000% / Taker 0.0400%</span>
-          <button className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded-full text-white text-sm font-medium">Deposit</button>
         </div>
       </div>
     </div>
