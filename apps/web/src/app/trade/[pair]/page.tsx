@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { createChart, ColorType } from "lightweight-charts";
 
 // ============================================================
@@ -73,12 +74,11 @@ const fetchRealCoins = async () => {
 };
 
 // ============================================================
-// 2. CHART COMPONENT
+// 2. CHART COMPONENT (Fixed for trade/[pair])
 // ============================================================
 function RealChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -102,7 +102,6 @@ function RealChart({ symbol }: { symbol: string }) {
       borderVisible: false,
       wickVisible: true,
     });
-    seriesRef.current = series;
 
     // Load real historical data
     fetchRealKlines(symbol).then((data) => {
@@ -122,10 +121,18 @@ function RealChart({ symbol }: { symbol: string }) {
         const lastData = series.data();
         if (lastData.length > 0) {
           const last = lastData[lastData.length - 1];
-          if (last.time === now) {
-            series.update({ ...last, high: Math.max(last.high, price), low: Math.min(last.low, price), close: price });
-          } else {
-            series.update({ time: now, open: price, high: price, low: price, close: price });
+          if ('high' in last) {
+            if (last.time === now) {
+              series.update({
+                time: last.time,
+                open: last.open,
+                high: Math.max(last.high, price),
+                low: Math.min(last.low, price),
+                close: price,
+              });
+            } else {
+              series.update({ time: now, open: price, high: price, low: price, close: price });
+            }
           }
         }
       }
@@ -152,8 +159,12 @@ function RealChart({ symbol }: { symbol: string }) {
 // 3. MAIN COMPONENT
 // ============================================================
 export default function SpotTradingPage() {
+  const params = useParams();
+  const pair = (params.pair as string) || "BTCUSDT";
+  const displaySymbol = pair.replace("USDT", "");
+
   const [coins, setCoins] = useState<string[]>([]);
-  const [selectedCoin, setSelectedCoin] = useState("BTC");
+  const [selectedCoin, setSelectedCoin] = useState(displaySymbol);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -176,16 +187,19 @@ export default function SpotTradingPage() {
     const loadCoins = async () => {
       const list = await fetchRealCoins();
       setCoins(list);
-      if (list.length > 0) {
+      if (list.length > 0 && list.includes(displaySymbol)) {
+        setSelectedCoin(displaySymbol);
+        await updateData(displaySymbol);
+      } else if (list.length > 0) {
         setSelectedCoin(list[0]);
         await updateData(list[0]);
       }
       setLoading(false);
     };
     loadCoins();
-  }, []);
+  }, [displaySymbol]);
 
-  // ===== UPDATE ALL DATA (Price, Stats, Order Book) =====
+  // ===== UPDATE ALL DATA =====
   const updateData = async (symbol: string) => {
     const stats = await fetchRealStats(symbol);
     if (stats) {
@@ -215,7 +229,7 @@ export default function SpotTradingPage() {
     return () => ws.close();
   }, [selectedCoin]);
 
-  // ===== REAL ORDER BOOK UPDATE (every 3s) =====
+  // ===== REAL ORDER BOOK UPDATE =====
   useEffect(() => {
     if (!selectedCoin) return;
     const interval = setInterval(async () => {
@@ -229,6 +243,8 @@ export default function SpotTradingPage() {
   const handleCoinSelect = async (coin: string) => {
     setSelectedCoin(coin);
     await updateData(coin);
+    // Update URL
+    window.history.pushState(null, "", `/trade/${coin}USDT`);
   };
 
   const filteredCoins = coins.filter((c) => c.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -257,7 +273,7 @@ export default function SpotTradingPage() {
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm text-gray-300">
             <Link href="/markets" className="hover:text-yellow-400">Markets</Link>
-            <Link href="/spot" className="text-yellow-400 font-medium">Spot</Link>
+            <Link href="/trade/BTCUSDT" className="text-yellow-400 font-medium">Spot</Link>
             <Link href="/futures" className="hover:text-yellow-400">Futures</Link>
           </nav>
         </div>
