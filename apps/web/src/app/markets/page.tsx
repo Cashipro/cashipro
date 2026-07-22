@@ -1,164 +1,277 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
+import React, { useState } from 'react';
+import Link from 'next/link';
 
-const allMarkets = [
-  { symbol: "BTC/USDT", price: 65432, change: 2.45, volume: "1.2B", high: 66200, low: 64100, favorite: true, hot: true, new: false },
-  { symbol: "ETH/USDT", price: 3456, change: -1.23, volume: "850M", high: 3520, low: 3400, favorite: false, hot: true, new: false },
-  { symbol: "BNB/USDT", price: 598, change: 5.67, volume: "450M", high: 610, low: 580, favorite: false, hot: false, new: true },
-  { symbol: "SOL/USDT", price: 178, change: 8.12, volume: "320M", high: 185, low: 170, favorite: false, hot: true, new: false },
-  { symbol: "XRP/USDT", price: 0.62, change: -2.01, volume: "280M", high: 0.65, low: 0.60, favorite: false, hot: false, new: false },
-  { symbol: "ADA/USDT", price: 0.46, change: 3.45, volume: "210M", high: 0.48, low: 0.44, favorite: false, hot: false, new: false },
-  { symbol: "DOGE/USDT", price: 0.15, change: 12.30, volume: "680M", high: 0.16, low: 0.14, favorite: false, hot: true, new: false },
-  { symbol: "DOT/USDT", price: 7.82, change: -0.56, volume: "180M", high: 8.00, low: 7.60, favorite: false, hot: false, new: false },
-  { symbol: "PEPE/USDT", price: 0.000012, change: 25.40, volume: "520M", high: 0.000013, low: 0.000010, favorite: false, hot: false, new: true },
-  { symbol: "WIF/USDT", price: 2.45, change: -5.67, volume: "95M", high: 2.60, low: 2.30, favorite: false, hot: false, new: true },
+interface TradingPair {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  volume: string;
+  leverage?: string;
+  isNew?: boolean;
+}
+
+const tradingPairs: TradingPair[] = [
+  {
+    symbol: 'BTCUSDT',
+    name: 'Bitcoin',
+    price: 66260.9,
+    change: -0.58,
+    volume: '4.430B',
+    leverage: '500x'
+  },
+  {
+    symbol: 'ETHUSDT',
+    name: 'Ethereum',
+    price: 1931.29,
+    change: 0.02,
+    volume: '1.828B',
+    leverage: '500x'
+  },
+  {
+    symbol: 'GOLD(XAU)USDT',
+    name: 'Gold',
+    price: 4142.04,
+    change: 1.55,
+    volume: '666.661M',
+    leverage: '1000x'
+  },
+  {
+    symbol: 'NBISUSDT',
+    name: 'Nebius',
+    price: 215.27,
+    change: 3.62,
+    volume: '3.365M'
+  },
+  {
+    symbol: 'WDCUSDT',
+    name: 'Western Digital',
+    price: 548.95,
+    change: 0.60,
+    volume: '750.873K'
+  },
+  {
+    symbol: 'MUUSDT',
+    name: 'Micron',
+    price: 970.58,
+    change: 1.95,
+    volume: '125.930M'
+  }
 ];
 
-export default function MarketsPage() {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "gainers" | "losers" | "favorites" | "hot" | "new">("all");
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(["BTC/USDT"]));
-
-  const toggleFavorite = (symbol: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(symbol)) {
-      newFavorites.delete(symbol);
-    } else {
-      newFavorites.add(symbol);
-    }
-    setFavorites(newFavorites);
-  };
-
-  const filteredMarkets = allMarkets
-    .filter((m) => {
-      const matchSearch = m.symbol.toLowerCase().includes(search.toLowerCase());
-      if (filter === "gainers") return matchSearch && m.change > 0;
-      if (filter === "losers") return matchSearch && m.change < 0;
-      if (filter === "favorites") return matchSearch && favorites.has(m.symbol);
-      if (filter === "hot") return matchSearch && m.hot;
-      if (filter === "new") return matchSearch && m.new;
-      return matchSearch;
-    })
-    .sort((a, b) => {
-      if (filter === "gainers") return b.change - a.change;
-      if (filter === "losers") return a.change - b.change;
-      return 0;
-    });
+export default function MexcMarketsPage() {
+  const [activeTab, setActiveTab] = useState<'spot' | 'futures'>('futures');
+  const [selectedCategory, setSelectedCategory] = useState('USDT-M Futures');
 
   return (
-    <div className="min-h-screen bg-black p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">📈 Markets</h1>
-            <p className="text-sm text-gray-500 mt-1">Explore and trade cryptocurrencies</p>
-          </div>
-          <div className="flex gap-2">
-            <span className="px-4 py-2 bg-[#2b2d33] text-gray-400 rounded-lg text-sm">
-              {filteredMarkets.length} pairs
-            </span>
+    <div className="min-h-screen bg-[#0A0A0A] text-white font-sans pb-20 md:pb-0">
+      {/* Top Navigation Bar */}
+      <div className="bg-black border-b border-gray-800">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center gap-8">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">M</span>
+                </div>
+                <span className="font-bold text-xl tracking-tight">MEXC</span>
+              </Link>
+
+              <nav className="hidden md:flex items-center gap-6 text-sm">
+                <a href="#" className="hover:text-blue-400">Buy Crypto</a>
+                <Link href="/markets" className="hover:text-blue-400">Markets</Link>
+                <Link href="/trade/BTCUSDT" className="hover:text-blue-400">Spot</Link>
+                <Link href="/futures" className="text-blue-400 border-b-2 border-blue-400 pb-3">Futures</Link>
+                <Link href="/earn" className="hover:text-blue-400">Earn</Link>
+                <a href="#" className="hover:text-blue-400">More</a>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex bg-gray-900 rounded-full px-4 py-1.5 text-sm items-center gap-2">
+                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                COIN
+              </div>
+              <Link href="/register">
+                <button className="bg-blue-600 hover:bg-blue-700 px-6 py-1.5 rounded-full text-sm font-medium">
+                  Sign Up
+                </button>
+              </Link>
+              <Link href="/login">
+                <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 cursor-pointer">
+                  👤
+                </div>
+              </Link>
+              <button className="md:hidden text-2xl">☰</button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search markets..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#1a1a1a] border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition"
-          />
+      {/* Secondary Navigation */}
+      <div className="border-b border-gray-800 bg-black">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="flex items-center gap-8 text-sm h-12 overflow-x-auto">
+            <div className="flex items-center gap-1 border-b-2 border-blue-400 pb-3 text-blue-400 font-medium whitespace-nowrap">
+              Crypto
+              <div className="ml-1 bg-blue-600 text-xs px-1.5 py-px rounded">0 Fees</div>
+            </div>
+            <div className="text-gray-400 hover:text-white cursor-pointer whitespace-nowrap">Stocks</div>
+            <div className="text-gray-400 hover:text-white cursor-pointer whitespace-nowrap">TradFi</div>
+            <div className="text-gray-400 hover:text-white cursor-pointer whitespace-nowrap">Crude Oil</div>
+          </div>
         </div>
+      </div>
 
-        {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-1 bg-[#1a1a1a] rounded-xl p-1 border border-[#2b2d33]">
-          {["all", "gainers", "losers", "favorites", "hot", "new"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setFilter(tab as any)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                filter === tab
-                  ? "bg-yellow-500/20 text-yellow-400"
-                  : "text-gray-400 hover:text-white hover:bg-[#2b2d33]"
+      {/* Main Content */}
+      <div className="max-w-screen-xl mx-auto px-4 py-4">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex bg-gray-900 rounded-lg p-1">
+            <button 
+              onClick={() => setActiveTab('spot')}
+              className={`px-6 py-2 rounded-lg text-sm transition-colors ${
+                activeTab === 'spot' ? 'bg-gray-700' : 'hover:bg-gray-800'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {tab === "hot" && " 🔥"}
-              {tab === "new" && " 🆕"}
-              {tab === "favorites" && " ⭐"}
+              Spot
             </button>
+            <button 
+              onClick={() => setActiveTab('futures')}
+              className={`px-6 py-2 rounded-lg text-sm transition-colors ${
+                activeTab === 'futures' ? 'bg-gray-700' : 'hover:bg-gray-800'
+              }`}
+            >
+              Futures
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <div className="bg-gray-900 px-4 py-2 rounded-lg text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-800">
+              All
+            </div>
+            <div className="bg-gray-900 px-4 py-2 rounded-lg text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-800">
+              New
+            </div>
+            <div className="bg-gray-900 px-4 py-2 rounded-lg text-sm flex items-center gap-2 cursor-pointer hover:bg-gray-800">
+              0 Fees
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2 bg-gray-900 rounded-lg px-4 py-2">
+            <select 
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-transparent outline-none text-sm"
+            >
+              <option value="USDT-M Futures">USDT-M Futures</option>
+              <option value="USDC-M Futures">USDC-M Futures</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs text-gray-400 px-4 mb-2">
+          <div>Trading Pair</div>
+          <div className="text-right">Price</div>
+          <div className="text-right hidden md:block">Change</div>
+          <div className="text-right hidden md:block">24h Vol</div>
+          <div></div>
+        </div>
+
+        {/* Trading Pairs List */}
+        <div className="space-y-1">
+          {tradingPairs.map((pair, index) => (
+            <div 
+              key={index}
+              className="bg-[#1A1A1A] hover:bg-[#222] rounded-xl px-4 py-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center group transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-xs font-bold">
+                  {pair.symbol.slice(0, 3)}
+                </div>
+                <div>
+                  <div className="font-medium text-sm md:text-base">{pair.symbol}</div>
+                  <div className="text-xs text-gray-500">{pair.name} Perpetual</div>
+                </div>
+                {pair.leverage && (
+                  <div className="hidden md:block ml-2 bg-blue-900 text-blue-400 text-[10px] px-2 py-px rounded">
+                    {pair.leverage}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-right font-mono text-sm md:text-lg font-semibold">
+                {pair.price.toLocaleString()}
+              </div>
+
+              <div className="text-right hidden md:block">
+                <div 
+                  className={`inline-block px-4 py-1 rounded text-sm font-medium ${
+                    pair.change >= 0 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'bg-red-500/20 text-red-400'
+                  }`}
+                >
+                  {pair.change >= 0 ? '+' : ''}{pair.change}%
+                </div>
+              </div>
+
+              <div className="text-right text-sm text-gray-400 font-mono hidden md:block">
+                {pair.volume}
+              </div>
+
+              <div className="text-right">
+                <Link href={`/trade/${pair.symbol}`}>
+                  <button className="bg-blue-600 hover:bg-blue-500 px-4 md:px-8 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors">
+                    Trade
+                  </button>
+                </Link>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Markets Table */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-[#2b2d33] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-black/30">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs text-gray-500">Market</th>
-                  <th className="px-4 py-3 text-right text-xs text-gray-500">Price</th>
-                  <th className="px-4 py-3 text-right text-xs text-gray-500">24h Change</th>
-                  <th className="px-4 py-3 text-right text-xs text-gray-500">24h Volume</th>
-                  <th className="px-4 py-3 text-right text-xs text-gray-500">High / Low</th>
-                  <th className="px-4 py-3 text-center text-xs text-gray-500">⭐</th>
-                  <th className="px-4 py-3 text-right text-xs text-gray-500">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#2b2d33]">
-                {filteredMarkets.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      No markets found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMarkets.map((m) => (
-                    <tr key={m.symbol} className="hover:bg-[#2b2d33]/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <div>
-                          <p className="text-white font-medium">{m.symbol}</p>
-                          <div className="flex gap-1">
-                            {m.hot && <span className="text-[10px] text-orange-400">🔥</span>}
-                            {m.new && <span className="text-[10px] text-green-400">🆕</span>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-white font-medium">${m.price.toFixed(2)}</td>
-                      <td className={`px-4 py-3 text-right font-bold ${m.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                        {m.change >= 0 ? "+" : ""}{m.change}%
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-300">${m.volume}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-green-500">${m.high}</span>
-                        <span className="text-gray-500 mx-1">/</span>
-                        <span className="text-red-500">${m.low}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => toggleFavorite(m.symbol)}
-                          className="text-xl transition hover:scale-110"
-                        >
-                          {favorites.has(m.symbol) ? "⭐" : "☆"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link href={`/trade/${m.symbol.replace("/", "")}`}>
-                          <button className="px-4 py-1.5 bg-yellow-500/10 text-yellow-400 text-sm rounded hover:bg-yellow-500/20 transition">
-                            Trade
-                          </button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* Bottom Banner */}
+        <div className="mt-8 bg-gradient-to-r from-blue-900/50 to-purple-900/30 border border-blue-800/50 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
+          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-4xl">💰</div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="text-xl font-semibold">Sign Up to Claim 10,000 USDT Bonus</div>
+            <div className="text-sm text-gray-400">Limited time offer • 47:59:42 remaining</div>
           </div>
+          <Link href="/register">
+            <button className="bg-white text-black px-10 py-3 rounded-full font-semibold hover:bg-gray-200 transition">
+              Sign Up
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 md:hidden">
+        <div className="flex items-center justify-around py-2">
+          <Link href="/" className="flex flex-col items-center text-blue-400">
+            <div>🏠</div>
+            <div className="text-xs">Home</div>
+          </Link>
+          <Link href="/markets" className="flex flex-col items-center text-gray-400 hover:text-white">
+            <div>📊</div>
+            <div className="text-xs">Markets</div>
+          </Link>
+          <Link href="/trade/BTCUSDT" className="flex flex-col items-center text-gray-400 hover:text-white">
+            <div>↗️</div>
+            <div className="text-xs">Trade</div>
+          </Link>
+          <Link href="/futures" className="flex flex-col items-center text-gray-400 hover:text-white">
+            <div>📈</div>
+            <div className="text-xs">Futures</div>
+          </Link>
+          <Link href="/wallet" className="flex flex-col items-center text-gray-400 hover:text-white">
+            <div>💼</div>
+            <div className="text-xs">Assets</div>
+          </Link>
         </div>
       </div>
     </div>
