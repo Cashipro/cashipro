@@ -55,7 +55,6 @@ export default function MexcStyleTradePage() {
             <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-xl font-bold text-white">M</div>
             <span className="font-bold text-2xl text-white">MEXC</span>
           </Link>
-
           <nav className="hidden lg:flex items-center gap-4 text-sm text-gray-300">
             <span className="hover:text-white cursor-pointer">Buy Crypto</span>
             <span className="hover:text-white cursor-pointer">Markets</span>
@@ -67,15 +66,10 @@ export default function MexcStyleTradePage() {
             <span className="hover:text-white cursor-pointer">More</span>
           </nav>
         </div>
-
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex bg-gray-900 px-3 py-1.5 rounded-full text-sm text-gray-400">
-            🔍 ONDO
-          </div>
+          <div className="hidden md:flex bg-gray-900 px-3 py-1.5 rounded-full text-sm text-gray-400">🔍 ONDO</div>
           <span className="text-sm text-gray-300 hidden md:block">Wallets</span>
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 text-sm">
-            👤
-          </div>
+          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 text-sm">👤</div>
           <button className="lg:hidden text-2xl text-white">☰</button>
         </div>
       </div>
@@ -91,7 +85,6 @@ export default function MexcStyleTradePage() {
             <div className="text-xs text-gray-500">{displaySymbol} Token</div>
           </div>
         </div>
-
         <div className="flex flex-wrap items-center gap-6 md:gap-10">
           <div>
             <span className="text-3xl font-mono font-bold text-white">{currentPrice.toFixed(4)}</span>
@@ -107,10 +100,9 @@ export default function MexcStyleTradePage() {
       </div>
 
       {/* ===== MAIN LAYOUT ===== */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-120px)] overflow-hidden">
-        {/* ===== LEFT: CHART + BOTTOM ===== */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
+        {/* LEFT: Chart */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
-          {/* Chart Tabs */}
           <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
             <div className="flex gap-4 text-sm">
               <span className="text-blue-400 border-b-2 border-blue-400 pb-2">Chart</span>
@@ -135,25 +127,22 @@ export default function MexcStyleTradePage() {
             </div>
           </div>
 
-          {/* Chart Area */}
-          <div className="flex-1 bg-[#0F1217] relative flex items-center justify-center min-h-[200px]">
+          <div className="flex-1 bg-[#0F1217] relative flex items-center justify-center min-h-[250px]">
             <div className="text-center">
-              <div className="text-7xl mb-4 opacity-20">📈</div>
-              <p className="text-gray-500 text-lg">{pair} {activeTimeframe} Chart</p>
-              <p className="text-xs text-gray-600 mt-2">MA5 • MA10 • MA20 • Volume</p>
+              <div className="text-5xl mb-3 opacity-20">📈</div>
+              <p className="text-gray-500 text-base">{pair} {activeTimeframe} Chart</p>
+              <p className="text-xs text-gray-600 mt-1">MA5 • MA10 • MA20 • Volume</p>
             </div>
-            {/* Simulated chart lines */}
-            <div className="absolute bottom-12 left-10 right-10 h-[200px] border border-gray-700/50 rounded">
-              <div className="absolute bottom-20 left-[20%] w-6 h-32 bg-green-500/40"></div>
-              <div className="absolute bottom-24 left-[35%] w-6 h-24 bg-red-500/40"></div>
-              <div className="absolute bottom-16 left-[50%] w-6 h-40 bg-green-500/40"></div>
-              <div className="absolute bottom-28 left-[65%] w-6 h-20 bg-red-500/40"></div>
-              <div className="absolute bottom-12 left-[80%] w-6 h-48 bg-green-500/40"></div>
+            <div className="absolute bottom-8 left-8 right-8 h-[150px] border border-gray-700/50 rounded">
+              <div className="absolute bottom-16 left-[20%] w-5 h-24 bg-green-500/40"></div>
+              <div className="absolute bottom-20 left-[35%] w-5 h-16 bg-red-500/40"></div>
+              <div className="absolute bottom-12 left-[50%] w-5 h-32 bg-green-500/40"></div>
+              <div className="absolute bottom-22 left-[65%] w-5 h-14 bg-red-500/40"></div>
+              <div className="absolute bottom-8 left-[80%] w-5 h-36 bg-green-500/40"></div>
             </div>
           </div>
 
-          {/* Bottom Stats */}
-          <div className="bg-[#111] px-4 py-2 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
+          <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
             <div>VOL(MX) <span className="text-white">108.91</span></div>
             <div>VOL(USDT) <span className="text-white">181.51K</span></div>
             <div>MA5 <span className="text-yellow-400">6.696K</span></div>
@@ -162,43 +151,36 @@ export default function MexcStyleTradePage() {
           </div>
         </div>
 
-        {/* ===== RIGHT: ORDER BOOK + TRADE ===== */}
-        <div className="w-full lg:w-[420px] xl:w-[460px] flex flex-col bg-[#0A0A0A] border-l border-gray-800">
-          {/* Tabs: Order Book / Market Trades */}
-          <div className="flex border-b border-gray-700 px-4 py-2">
-            <span className="text-blue-400 border-b-2 border-blue-400 pb-2 text-sm font-medium">Order Book</span>
-            <span className="text-gray-400 ml-6 text-sm">Market Trades</span>
-            <div className="ml-auto text-xs text-gray-500">0.0001 ▼</div>
-          </div>
+        {/* RIGHT: Order Book + Spot Section — SIDE BY SIDE */}
+        <div className="w-full lg:w-[420px] xl:w-[460px] flex flex-row bg-[#0A0A0A]">
+          {/* Order Book - Left Side */}
+          <div className="flex-1 flex flex-col border-r border-gray-700 min-w-[180px]">
+            <div className="flex border-b border-gray-700 px-3 py-2">
+              <span className="text-blue-400 border-b-2 border-blue-400 pb-2 text-xs font-medium">Order Book</span>
+              <span className="text-gray-400 ml-4 text-xs">Market Trades</span>
+            </div>
 
-          {/* Order Book */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Asks (Sell) */}
-            <div className="px-3 pt-2">
-              <div className="grid grid-cols-3 text-xs text-gray-500 mb-1">
-                <div>Price (USDT)</div>
+            <div className="flex-1 overflow-y-auto px-2">
+              <div className="grid grid-cols-3 text-[10px] text-gray-500 mb-1">
+                <div>Price</div>
                 <div className="text-right">Amount</div>
                 <div className="text-right">Total</div>
               </div>
-              {orderBookAsks.map((item, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-3 text-sm py-0.5 hover:bg-red-500/10 text-red-400">
+              {orderBookAsks.slice(0, 6).map((item, i) => (
+                <div key={`ask-${i}`} className="grid grid-cols-3 text-xs py-0.5 hover:bg-red-500/10 text-red-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
                 </div>
               ))}
-            </div>
 
-            {/* Current Price */}
-            <div className="bg-[#1C1C1C] py-3 text-center border-y border-gray-700 my-1">
-              <div className="text-2xl font-bold text-white">{currentPrice.toFixed(4)}</div>
-              <div className="text-green-400 text-sm">↑ $1.66</div>
-            </div>
+              <div className="bg-[#1C1C1C] py-2 text-center border-y border-gray-700 my-1">
+                <div className="text-sm font-bold text-white">{currentPrice.toFixed(4)}</div>
+                <div className="text-green-400 text-[10px]">↑ $1.66</div>
+              </div>
 
-            {/* Bids (Buy) */}
-            <div className="px-3 pb-2">
-              {orderBookBids.map((item, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-3 text-sm py-0.5 hover:bg-green-500/10 text-green-400">
+              {orderBookBids.slice(0, 6).map((item, i) => (
+                <div key={`bid-${i}`} className="grid grid-cols-3 text-xs py-0.5 hover:bg-green-500/10 text-green-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
@@ -207,13 +189,12 @@ export default function MexcStyleTradePage() {
             </div>
           </div>
 
-          {/* ===== TRADE PANEL ===== */}
-          <div className="border-t border-gray-700 bg-[#111] p-4">
-            {/* Buy/Sell Buttons */}
-            <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
+          {/* SPOT SECTION - Right Side */}
+          <div className="w-[180px] flex flex-col bg-[#111] p-3">
+            <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
-                className={`flex-1 py-2.5 text-base font-bold transition ${
+                className={`flex-1 py-1.5 text-xs font-bold transition ${
                   side === "buy" ? "bg-green-500 text-black" : "text-gray-400"
                 }`}
               >
@@ -221,7 +202,7 @@ export default function MexcStyleTradePage() {
               </button>
               <button
                 onClick={() => setSide("sell")}
-                className={`flex-1 py-2.5 text-base font-bold transition ${
+                className={`flex-1 py-1.5 text-xs font-bold transition ${
                   side === "sell" ? "bg-red-500 text-white" : "text-gray-400"
                 }`}
               >
@@ -229,60 +210,46 @@ export default function MexcStyleTradePage() {
               </button>
             </div>
 
-            {/* Order Type Tabs */}
-            <div className="flex gap-1 mb-3 text-sm">
+            <div className="flex gap-1 mb-2 text-[10px]">
               {["limit", "market", "tpSl"].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setOrderMode(mode as any)}
-                  className={`flex-1 py-1.5 rounded text-sm transition ${
+                  className={`flex-1 py-0.5 rounded text-[10px] transition ${
                     orderMode === mode ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                   }`}
                 >
-                  {mode === "tpSl" ? "TP/SL" : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  {mode === "tpSl" ? "TP/SL" : mode.slice(0, 3)}
                 </button>
               ))}
             </div>
 
-            {/* Price Input */}
-            <div className="mb-3">
-              <div className="text-xs text-gray-500 mb-1">Price (USDT)</div>
-              <input
-                type="text"
-                defaultValue={currentPrice.toFixed(4)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 font-mono text-white text-sm focus:outline-none focus:border-blue-500"
-              />
+            <div className="mb-1">
+              <div className="text-[8px] text-gray-500">Price</div>
+              <input type="text" defaultValue={currentPrice.toFixed(4)} className="w-full bg-gray-900 border border-gray-700 rounded px-1 py-1 text-xs text-white" />
             </div>
 
-            {/* Amount Input */}
-            <div className="mb-3">
-              <div className="text-xs text-gray-500 mb-1">Amount</div>
-              <input
-                type="text"
-                placeholder="0.00"
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 font-mono text-white text-sm focus:outline-none focus:border-blue-500"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Available 0.0142 USDT</span>
-                <div className="flex gap-1">
-                  {[0, 25, 50, 75, 100].map((p) => (
-                    <button key={p} className="px-2 py-0.5 bg-gray-800 rounded hover:bg-gray-700 text-xs">
-                      {p}%
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="mb-1">
+              <div className="text-[8px] text-gray-500">Amount</div>
+              <input type="text" placeholder="0" className="w-full bg-gray-900 border border-gray-700 rounded px-1 py-1 text-xs text-white" />
             </div>
 
-            {/* Trade Button */}
+            <div className="flex gap-1 mt-1 text-[8px]">
+              {[25, 50, 75, 100].map((p) => (
+                <button key={p} className="flex-1 py-0.5 bg-gray-800 rounded hover:bg-gray-700">{p}%</button>
+              ))}
+            </div>
+
+            <div className="text-[8px] text-gray-500 mt-1">Available 0.0142</div>
+
             <button
-              className={`w-full py-3.5 rounded-xl text-lg font-bold transition ${
+              className={`w-full mt-1 py-2 rounded-lg text-xs font-bold transition ${
                 side === "buy"
                   ? "bg-green-500 hover:bg-green-600 text-black"
                   : "bg-red-500 hover:bg-red-600 text-white"
               }`}
             >
-              {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
+              {side === "buy" ? `Buy` : `Sell`}
             </button>
           </div>
         </div>
@@ -290,17 +257,15 @@ export default function MexcStyleTradePage() {
 
       {/* ===== BOTTOM TABS ===== */}
       <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-2 flex flex-wrap items-center justify-between text-sm">
-        <div className="flex gap-4 md:gap-6 overflow-x-auto">
+        <div className="flex gap-4 overflow-x-auto">
           <span className="text-blue-400 border-b-2 border-blue-400 pb-1 whitespace-nowrap">Open Orders(0)</span>
           <span className="text-gray-400 whitespace-nowrap">Order History</span>
           <span className="text-gray-400 whitespace-nowrap">Trade History</span>
           <span className="text-gray-400 whitespace-nowrap">Holdings(1)</span>
-          <span className="text-gray-400 whitespace-nowrap">Strategies (0)</span>
-          <span className="text-gray-400 whitespace-nowrap">Hide Other Pairs</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span>Maker 0.0000% / Taker 0.0400%</span>
-          <button className="bg-blue-600 hover:bg-blue-500 px-6 py-1.5 rounded-full text-white text-sm font-medium">
+          <button className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded-full text-white text-sm font-medium">
             Deposit
           </button>
         </div>
