@@ -36,19 +36,14 @@ export default function Chart({ data }: ChartProps) {
       },
     });
 
-    // Sahi tarika — Series type specify karo
-    const series = chart.addSeries(
-      { 
-        upColor: "#10B981",
-        downColor: "#EF4444",
-        wickUpColor: "#10B981",
-        wickDownColor: "#EF4444",
-        borderVisible: false,
-      } as any,
-      { 
-        // Custom options
-      }
-    );
+    // Sahi tarika — CandlestickSeries use karo
+    const series = chart.addCandlestickSeries({
+      upColor: "#10B981",
+      downColor: "#EF4444",
+      wickUpColor: "#10B981",
+      wickDownColor: "#EF4444",
+      borderVisible: false,
+    });
 
     // Data ko format karo
     const formattedData = data.map((item) => ({
