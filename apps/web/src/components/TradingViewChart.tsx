@@ -6,12 +6,14 @@ interface TradingViewChartProps {
   symbol?: string;
   theme?: "dark" | "light";
   height?: number;
+  interval?: string; // ✅ SIRF YEH ADD KIYA
 }
 
 export default function TradingViewChart({
   symbol = "BINANCE:BTCUSDT",
   theme = "dark",
   height = 450,
+  interval = "15", // ✅ SIRF YEH ADD KIYA
 }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
@@ -19,7 +21,6 @@ export default function TradingViewChart({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Cleanup previous widget
     if (widgetRef.current) {
       widgetRef.current.remove();
       widgetRef.current = null;
@@ -57,7 +58,7 @@ export default function TradingViewChart({
         widgetRef.current = null;
       }
     };
-  }, [symbol, theme, height]);
+  }, [symbol, theme, height, interval]); // ✅ SIRF YEH ADD KIYA
 
   return <div ref={containerRef} className="w-full h-full min-h-[300px]" style={{ height: `${height}px` }} />;
 }
