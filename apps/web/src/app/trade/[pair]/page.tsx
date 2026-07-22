@@ -5,20 +5,20 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-const Chart = dynamic(
-  () => import("@/components/Chart"),
-  { ssr: false }
+// TradingView Chart — Dynamic Import (SSR off)
+const TradingViewChart = dynamic(
+  () => import("@/components/TradingViewChart"),
+  { ssr: false, loading: () => (
+    <div className="flex items-center justify-center h-full min-h-[300px] bg-[#0F1217]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="text-gray-500 text-sm mt-2">Loading chart...</p>
+      </div>
+    </div>
+  )}
 );
 
 // ===== TYPE DEFINITIONS =====
-interface CandleData {
-  time: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
 interface Order {
   price: number;
   amount: number;
@@ -47,49 +47,11 @@ export default function TradePage() {
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
   const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
-  const [chartData, setChartData] = useState<CandleData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
 
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
-
-  // ===== GENERATE MOCK CHART DATA =====
-  const generateMockChartData = (count: number): CandleData[] => {
-    const data: CandleData[] = [];
-    let price = 65000;
-    const now = Date.now();
-    for (let i = count; i > 0; i--) {
-      const change = (Math.random() - 0.5) * 500;
-      const open = price;
-      const close = price + change;
-      data.push({
-        time: new Date(now - i * 60000).toISOString().slice(0, 16),
-        open: Math.round(open * 100) / 100,
-        high: Math.round((Math.max(open, close) + Math.random() * 200) * 100) / 100,
-        low: Math.round((Math.min(open, close) - Math.random() * 200) * 100) / 100,
-        close: Math.round(close * 100) / 100,
-      });
-      price = close;
-    }
-    return data;
-  };
-
-  // ===== FETCH CHART DATA =====
-  const fetchChartData = async (interval: string) => {
-    try {
-      const res = await fetch(`/api/klines?symbol=${pair}&interval=${interval}&limit=100`);
-      const data = await res.json();
-      if (data.data && data.data.length > 0) {
-        setChartData(data.data);
-      } else {
-        setChartData(generateMockChartData(100));
-      }
-    } catch (error) {
-      console.error("Error fetching chart data:", error);
-      setChartData(generateMockChartData(100));
-    }
-  };
 
   // ===== FETCH ORDER BOOK =====
   const fetchOrderBook = async () => {
@@ -102,6 +64,7 @@ export default function TradePage() {
           setPrice(data.orderBook.bids[0].price);
         }
       } else {
+        // Mock order book
         const bids: Order[] = [];
         const asks: Order[] = [];
         const basePrice = price;
@@ -147,7 +110,6 @@ export default function TradePage() {
       if (data.success) {
         fetchOrderBook();
         fetchTrades();
-        fetchChartData(activeTimeframe);
       }
     } catch (error) {
       console.error("Error placing order:", error);
@@ -158,11 +120,7 @@ export default function TradePage() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchChartData(activeTimeframe),
-        fetchOrderBook(),
-        fetchTrades(),
-      ]);
+      await Promise.all([fetchOrderBook(), fetchTrades()]);
       setLoading(false);
     };
     loadData();
@@ -177,18 +135,14 @@ export default function TradePage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [pair]);
-
-  useEffect(() => {
-    fetchChartData(activeTimeframe);
-  }, [activeTimeframe]);
+  }, []);
 
   const bids = orderBook.bids || [];
   const asks = orderBook.asks || [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
-      {/* Top Navbar */}
+      {/* ===== TOP NAVBAR ===== */}
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
@@ -211,7 +165,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* Pair Header */}
+      {/* ===== PAIR HEADER ===== */}
       <div className="bg-[#111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white">
@@ -236,9 +190,9 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* Main Layout */}
+      {/* ===== MAIN LAYOUT ===== */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        {/* Chart */}
+        {/* LEFT: Chart with TradingView */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
           <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
             <div className="flex gap-4 text-sm">
@@ -288,24 +242,13 @@ export default function TradePage() {
             </div>
           </div>
 
-          <div className="flex-1 bg-[#0F1217] p-4 min-h-[250px]">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="text-gray-500 text-sm mt-2">Loading chart...</p>
-                </div>
-              </div>
-            ) : chartData.length > 0 ? (
-              <Chart data={chartData} />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="text-5xl mb-3 opacity-20">📈</div>
-                  <p className="text-gray-500">No chart data available</p>
-                </div>
-              </div>
-            )}
+          {/* TradingView Chart */}
+          <div className="flex-1 bg-[#0F1217] p-2 min-h-[250px]">
+            <TradingViewChart 
+              symbol={`BINANCE:${pair}`} 
+              theme="dark" 
+              height={450} 
+            />
           </div>
 
           <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
@@ -317,7 +260,7 @@ export default function TradePage() {
           </div>
         </div>
 
-        {/* Order Book + Spot */}
+        {/* RIGHT: Order Book + Spot Section */}
         <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
           {/* Order Book */}
           <div className="w-[120px] flex flex-col border-r border-gray-700">
@@ -347,8 +290,9 @@ export default function TradePage() {
             </div>
           </div>
 
-          {/* Spot Section */}
+          {/* SPOT SECTION */}
           <div className="flex-1 flex flex-col bg-[#111] p-3">
+            {/* Buy/Sell */}
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
@@ -368,6 +312,7 @@ export default function TradePage() {
               </button>
             </div>
 
+            {/* Order Type Tabs */}
             <div className="flex items-center gap-1 mb-2 text-xs">
               <button
                 onClick={() => setOrderType("limit")}
@@ -408,6 +353,7 @@ export default function TradePage() {
               </div>
             </div>
 
+            {/* Price */}
             <div className="mb-1.5">
               <div className="flex justify-between text-[10px] text-gray-500">
                 <span>Price (USDT)</span>
@@ -420,6 +366,7 @@ export default function TradePage() {
               />
             </div>
 
+            {/* Amount */}
             <div className="mb-1.5">
               <div className="text-[10px] text-gray-500">Amount</div>
               <input
@@ -429,6 +376,7 @@ export default function TradePage() {
               />
             </div>
 
+            {/* Quick % */}
             <div className="flex gap-1 text-xs">
               {[0, 25, 50, 75, 100].map((p) => (
                 <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
@@ -437,8 +385,10 @@ export default function TradePage() {
               ))}
             </div>
 
+            {/* Total */}
             <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
 
+            {/* TP/SL Boxes */}
             {showTPSL && (
               <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
                 <div>
@@ -460,6 +410,7 @@ export default function TradePage() {
               </div>
             )}
 
+            {/* Trade Button */}
             <button
               onClick={() => {
                 const inputs = document.querySelectorAll('input[type="text"]');
@@ -489,7 +440,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* Bottom Tabs */}
+      {/* ===== BOTTOM TABS ===== */}
       <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-2 flex flex-wrap items-center justify-between text-sm">
         <div className="flex gap-4 overflow-x-auto">
           <span className="text-blue-400 border-b-2 border-blue-400 pb-1 whitespace-nowrap">Open Orders(0)</span>
