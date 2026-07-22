@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-export default function CashiproSpotTrading() {
+export default function MexcStyleTradePage() {
   const params = useParams();
-  const pair = (params.pair as string) || "BTCUSDT";
+  const pair = (params.pair as string) || "MXUSDT";
   const displaySymbol = pair.replace("USDT", "");
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -22,128 +22,166 @@ export default function CashiproSpotTrading() {
     { price: 1.6695, amount: "288.71", total: "482.00" },
     { price: 1.6690, amount: "263.03", total: "438.99" },
     { price: 1.6687, amount: "279.26", total: "466.00" },
+    { price: 1.6682, amount: "240.84", total: "401.76" },
+    { price: 1.6679, amount: "1,237.48", total: "2,063.99" },
+    { price: 1.6677, amount: "281.83", total: "470.00" },
+    { price: 1.6673, amount: "268.10", total: "447.00" },
+    { price: 1.6671, amount: "258.53", total: "430.99" },
+    { price: 1.6667, amount: "105.60", total: "176.00" },
   ];
 
   const orderBookBids = [
-    { price: 1.6666, amount: "759.70", total: "1,266.04" },
-    { price: 1.6665, amount: "269.46", total: "449.00" },
-    { price: 1.6663, amount: "256.93", total: "427.99" },
-    { price: 1.6658, amount: "1,242.57", total: "2,069.25" },
-    { price: 1.6653, amount: "273.24", total: "454.99" },
+    { price: 1.6666, amount: "27.96", total: "46.59" },
+    { price: 1.6665, amount: "759.70", total: "1,266.04" },
+    { price: 1.6663, amount: "269.46", total: "449.00" },
+    { price: 1.6658, amount: "256.93", total: "427.99" },
+    { price: 1.6653, amount: "1,242.57", total: "2,069.25" },
+    { price: 1.6652, amount: "273.24", total: "454.99" },
+    { price: 1.6650, amount: "275.68", total: "459.00" },
+    { price: 1.6648, amount: "1.72", total: "1.99" },
+    { price: 1.6645, amount: "273.36", total: "455.00" },
+    { price: 1.6641, amount: "258.40", total: "430.00" },
+    { price: 1.6638, amount: "253.64", total: "422.00" },
   ];
 
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white font-sans">
-      {/* Top Nav - CashiPro */}
-      <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-8">
+    <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
+      {/* ===== TOP NAVBAR ===== */}
+      <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center text-xl font-bold">C</div>
-            <span className="font-bold text-2xl tracking-tight text-white">CashiPro</span>
+            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-xl font-bold text-white">M</div>
+            <span className="font-bold text-2xl text-white">MEXC</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            <Link href="/markets" className="text-gray-400 hover:text-purple-400">Markets</Link>
-            <Link href="/trade/BTCUSDT" className="text-purple-400">Spot</Link>
-            <Link href="/futures" className="text-gray-400 hover:text-purple-400">Futures</Link>
-            <Link href="/earn" className="text-gray-400 hover:text-purple-400">Earn</Link>
+          <nav className="hidden lg:flex items-center gap-4 text-sm text-gray-300">
+            <span className="hover:text-white cursor-pointer">Buy Crypto</span>
+            <span className="hover:text-white cursor-pointer">Markets</span>
+            <span className="text-blue-400 cursor-pointer">Spot</span>
+            <span className="hover:text-white cursor-pointer">Futures</span>
+            <span className="hover:text-white cursor-pointer">Earn</span>
+            <span className="hover:text-white cursor-pointer">Event Center</span>
+            <span className="hover:text-white cursor-pointer">Rewards Hub</span>
+            <span className="hover:text-white cursor-pointer">More</span>
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex bg-gray-900 px-4 py-1.5 rounded-full text-sm text-gray-300">🔍 Search</div>
-          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">Wallets</Link>
-          <Link href="/login">
-            <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600">👤</div>
-          </Link>
-          <button className="md:hidden text-2xl text-white">☰</button>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex bg-gray-900 px-3 py-1.5 rounded-full text-sm text-gray-400">
+            🔍 ONDO
+          </div>
+          <span className="text-sm text-gray-300 hidden md:block">Wallets</span>
+          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 text-sm">
+            👤
+          </div>
+          <button className="lg:hidden text-2xl text-white">☰</button>
         </div>
       </div>
 
-      {/* Pair Header */}
-      <div className="bg-[#111] border-b border-gray-700 px-6 py-4 flex flex-wrap items-center gap-6 md:gap-8">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white">
+      {/* ===== PAIR HEADER ===== */}
+      <div className="bg-[#111111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white">
             {displaySymbol.slice(0, 2)}
           </div>
           <div>
-            <div className="text-3xl font-bold text-white">{pair}</div>
-            <div className="text-sm text-gray-400">{displaySymbol} Token</div>
+            <div className="text-2xl font-bold text-white">{pair}</div>
+            <div className="text-xs text-gray-500">{displaySymbol} Token</div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-6 md:gap-12 text-lg">
+        <div className="flex flex-wrap items-center gap-6 md:gap-10">
           <div>
-            <span className="text-4xl font-mono text-white">{currentPrice.toFixed(4)}</span>
-            <span className="text-green-400 ml-3 text-xl">+{priceChange}%</span>
+            <span className="text-3xl font-mono font-bold text-white">{currentPrice.toFixed(4)}</span>
+            <span className="text-green-400 ml-2 text-lg">+{priceChange}%</span>
           </div>
-          <div className="text-sm space-x-4 md:space-x-8">
-            <span className="text-gray-400">24H High <span className="font-mono text-white">1.6700</span></span>
-            <span className="text-gray-400">24H Low <span className="font-mono text-white">1.6537</span></span>
-            <span className="text-gray-400">Vol <span className="font-mono text-white">1.15M</span></span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-sm">
+            <div><span className="text-gray-500">24H High</span> <span className="text-white">1.6700</span></div>
+            <div><span className="text-gray-500">24H Low</span> <span className="text-white">1.6537</span></div>
+            <div><span className="text-gray-500">24H Vol</span> <span className="text-white">1.15M</span></div>
+            <div><span className="text-gray-500">24H Amount</span> <span className="text-white">1.91M</span></div>
           </div>
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-135px)]">
-        {/* Chart Area - Left Side */}
-        <div className="flex-[2] flex flex-col border-r border-gray-800">
-          <div className="px-6 py-3 border-b border-gray-800 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex gap-4 md:gap-8">
-              <span className="text-purple-400 border-b-2 border-purple-400 pb-3">Chart</span>
+      {/* ===== MAIN LAYOUT ===== */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-120px)] overflow-hidden">
+        {/* ===== LEFT: CHART + BOTTOM ===== */}
+        <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
+          {/* Chart Tabs */}
+          <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
+            <div className="flex gap-4 text-sm">
+              <span className="text-blue-400 border-b-2 border-blue-400 pb-2">Chart</span>
               <span className="text-gray-400">Info</span>
               <span className="text-gray-400">Trading Data</span>
+              <span className="text-gray-400">Compare</span>
             </div>
-
-            <div className="flex flex-wrap gap-1 text-sm">
-              {timeframes.map((t) => (
+            <div className="flex flex-wrap gap-1 text-xs">
+              {timeframes.map((tf) => (
                 <button
-                  key={t}
-                  onClick={() => setActiveTimeframe(t)}
-                  className={`px-3 md:px-4 py-1 rounded cursor-pointer text-xs md:text-sm ${
-                    activeTimeframe === t
-                      ? "bg-purple-500 text-white"
-                      : "hover:bg-gray-800 text-gray-400"
+                  key={tf}
+                  onClick={() => setActiveTimeframe(tf)}
+                  className={`px-2 py-1 rounded transition ${
+                    activeTimeframe === tf
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-400 hover:bg-gray-800"
                   }`}
                 >
-                  {t}
+                  {tf}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Chart Placeholder */}
-          <div className="flex-1 bg-[#0C0F14] relative flex items-center justify-center min-h-[200px]">
+          {/* Chart Area */}
+          <div className="flex-1 bg-[#0F1217] relative flex items-center justify-center min-h-[200px]">
             <div className="text-center">
-              <div className="text-7xl mb-6 opacity-20">📈</div>
-              <p className="text-gray-500 text-xl">{pair} {activeTimeframe} Chart</p>
-              <p className="text-xs text-gray-600 mt-2">Candlestick + MA5, MA10, MA20</p>
+              <div className="text-7xl mb-4 opacity-20">📈</div>
+              <p className="text-gray-500 text-lg">{pair} {activeTimeframe} Chart</p>
+              <p className="text-xs text-gray-600 mt-2">MA5 • MA10 • MA20 • Volume</p>
             </div>
+            {/* Simulated chart lines */}
+            <div className="absolute bottom-12 left-10 right-10 h-[200px] border border-gray-700/50 rounded">
+              <div className="absolute bottom-20 left-[20%] w-6 h-32 bg-green-500/40"></div>
+              <div className="absolute bottom-24 left-[35%] w-6 h-24 bg-red-500/40"></div>
+              <div className="absolute bottom-16 left-[50%] w-6 h-40 bg-green-500/40"></div>
+              <div className="absolute bottom-28 left-[65%] w-6 h-20 bg-red-500/40"></div>
+              <div className="absolute bottom-12 left-[80%] w-6 h-48 bg-green-500/40"></div>
+            </div>
+          </div>
+
+          {/* Bottom Stats */}
+          <div className="bg-[#111] px-4 py-2 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
+            <div>VOL(MX) <span className="text-white">108.91</span></div>
+            <div>VOL(USDT) <span className="text-white">181.51K</span></div>
+            <div>MA5 <span className="text-yellow-400">6.696K</span></div>
+            <div>MA10 <span className="text-purple-400">10.119K</span></div>
+            <div>MA20 <span className="text-blue-400">10.318K</span></div>
           </div>
         </div>
 
-        {/* RIGHT SIDE - Order Book + Trade Panel */}
-        <div className="w-full lg:w-[460px] flex flex-col bg-[#0A0A0A] border-l border-gray-800">
-          
-          {/* Order Book */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-gray-700 flex items-center">
-              <div className="text-purple-400 font-medium">Order Book</div>
-              <div className="ml-auto text-xs text-gray-400">0.0001 ▼</div>
-            </div>
+        {/* ===== RIGHT: ORDER BOOK + TRADE ===== */}
+        <div className="w-full lg:w-[420px] xl:w-[460px] flex flex-col bg-[#0A0A0A] border-l border-gray-800">
+          {/* Tabs: Order Book / Market Trades */}
+          <div className="flex border-b border-gray-700 px-4 py-2">
+            <span className="text-blue-400 border-b-2 border-blue-400 pb-2 text-sm font-medium">Order Book</span>
+            <span className="text-gray-400 ml-6 text-sm">Market Trades</span>
+            <div className="ml-auto text-xs text-gray-500">0.0001 ▼</div>
+          </div>
 
+          {/* Order Book */}
+          <div className="flex-1 overflow-y-auto">
             {/* Asks (Sell) */}
-            <div className="px-4 text-xs bg-[#111] pt-2">
-              <div className="grid grid-cols-3 text-gray-500 mb-1 text-[10px]">
+            <div className="px-3 pt-2">
+              <div className="grid grid-cols-3 text-xs text-gray-500 mb-1">
                 <div>Price (USDT)</div>
                 <div className="text-right">Amount</div>
                 <div className="text-right">Total</div>
               </div>
               {orderBookAsks.map((item, i) => (
-                <div key={i} className="grid grid-cols-3 py-[3px] text-sm hover:bg-red-500/10 text-red-400">
+                <div key={`ask-${i}`} className="grid grid-cols-3 text-sm py-0.5 hover:bg-red-500/10 text-red-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
@@ -152,15 +190,15 @@ export default function CashiproSpotTrading() {
             </div>
 
             {/* Current Price */}
-            <div className="bg-[#1C1C1C] py-5 text-center border-y border-gray-700">
-              <div className="text-3xl font-bold text-white">{currentPrice.toFixed(4)}</div>
+            <div className="bg-[#1C1C1C] py-3 text-center border-y border-gray-700 my-1">
+              <div className="text-2xl font-bold text-white">{currentPrice.toFixed(4)}</div>
               <div className="text-green-400 text-sm">↑ $1.66</div>
             </div>
 
             {/* Bids (Buy) */}
-            <div className="px-4 text-xs flex-1 overflow-auto">
+            <div className="px-3 pb-2">
               {orderBookBids.map((item, i) => (
-                <div key={i} className="grid grid-cols-3 py-[3px] text-sm hover:bg-green-500/10 text-green-400">
+                <div key={`bid-${i}`} className="grid grid-cols-3 text-sm py-0.5 hover:bg-green-500/10 text-green-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
@@ -169,12 +207,13 @@ export default function CashiproSpotTrading() {
             </div>
           </div>
 
-          {/* Trading Panel */}
-          <div className="border-t border-gray-700 bg-[#111] p-4 md:p-5">
-            <div className="flex rounded-xl overflow-hidden mb-4 bg-gray-900">
+          {/* ===== TRADE PANEL ===== */}
+          <div className="border-t border-gray-700 bg-[#111] p-4">
+            {/* Buy/Sell Buttons */}
+            <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
               <button
                 onClick={() => setSide("buy")}
-                className={`flex-1 py-3 text-lg font-bold ${
+                className={`flex-1 py-2.5 text-base font-bold transition ${
                   side === "buy" ? "bg-green-500 text-black" : "text-gray-400"
                 }`}
               >
@@ -182,7 +221,7 @@ export default function CashiproSpotTrading() {
               </button>
               <button
                 onClick={() => setSide("sell")}
-                className={`flex-1 py-3 text-lg font-bold ${
+                className={`flex-1 py-2.5 text-base font-bold transition ${
                   side === "sell" ? "bg-red-500 text-white" : "text-gray-400"
                 }`}
               >
@@ -190,12 +229,13 @@ export default function CashiproSpotTrading() {
               </button>
             </div>
 
-            <div className="flex gap-2 mb-5 text-sm">
+            {/* Order Type Tabs */}
+            <div className="flex gap-1 mb-3 text-sm">
               {["limit", "market", "tpSl"].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setOrderMode(mode as any)}
-                  className={`flex-1 py-2 rounded-lg transition ${
+                  className={`flex-1 py-1.5 rounded text-sm transition ${
                     orderMode === mode ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                   }`}
                 >
@@ -204,38 +244,65 @@ export default function CashiproSpotTrading() {
               ))}
             </div>
 
-            <div className="space-y-5">
-              <div>
-                <div className="text-xs text-gray-400 mb-2">Price (USDT)</div>
-                <input
-                  type="text"
-                  defaultValue={currentPrice.toFixed(4)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 font-mono text-lg text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
+            {/* Price Input */}
+            <div className="mb-3">
+              <div className="text-xs text-gray-500 mb-1">Price (USDT)</div>
+              <input
+                type="text"
+                defaultValue={currentPrice.toFixed(4)}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 font-mono text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
 
-              <div>
-                <div className="text-xs text-gray-400 mb-2">Amount</div>
-                <input
-                  type="text"
-                  placeholder="0.00"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 font-mono text-lg text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  className={`w-full py-4 rounded-2xl text-xl font-bold transition-all ${
-                    side === "buy"
-                      ? "bg-green-500 hover:bg-green-600 text-black"
-                      : "bg-red-500 hover:bg-red-600 text-white"
-                  }`}
-                >
-                  {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
-                </button>
+            {/* Amount Input */}
+            <div className="mb-3">
+              <div className="text-xs text-gray-500 mb-1">Amount</div>
+              <input
+                type="text"
+                placeholder="0.00"
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 font-mono text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Available 0.0142 USDT</span>
+                <div className="flex gap-1">
+                  {[0, 25, 50, 75, 100].map((p) => (
+                    <button key={p} className="px-2 py-0.5 bg-gray-800 rounded hover:bg-gray-700 text-xs">
+                      {p}%
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {/* Trade Button */}
+            <button
+              className={`w-full py-3.5 rounded-xl text-lg font-bold transition ${
+                side === "buy"
+                  ? "bg-green-500 hover:bg-green-600 text-black"
+                  : "bg-red-500 hover:bg-red-600 text-white"
+              }`}
+            >
+              {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
+            </button>
           </div>
+        </div>
+      </div>
+
+      {/* ===== BOTTOM TABS ===== */}
+      <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-2 flex flex-wrap items-center justify-between text-sm">
+        <div className="flex gap-4 md:gap-6 overflow-x-auto">
+          <span className="text-blue-400 border-b-2 border-blue-400 pb-1 whitespace-nowrap">Open Orders(0)</span>
+          <span className="text-gray-400 whitespace-nowrap">Order History</span>
+          <span className="text-gray-400 whitespace-nowrap">Trade History</span>
+          <span className="text-gray-400 whitespace-nowrap">Holdings(1)</span>
+          <span className="text-gray-400 whitespace-nowrap">Strategies (0)</span>
+          <span className="text-gray-400 whitespace-nowrap">Hide Other Pairs</span>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          <span>Maker 0.0000% / Taker 0.0400%</span>
+          <button className="bg-blue-600 hover:bg-blue-500 px-6 py-1.5 rounded-full text-white text-sm font-medium">
+            Deposit
+          </button>
         </div>
       </div>
     </div>
