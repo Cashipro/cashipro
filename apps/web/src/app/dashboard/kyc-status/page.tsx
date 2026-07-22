@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function KYCStatusDashboard() {
   const kycStatus = {
     level: "1",
-    status: "pending" as const,
+    status: "pending" as "pending" | "approved" | "rejected",
     verifiedAt: null,
     limits: {
       deposit: "Unlimited",
