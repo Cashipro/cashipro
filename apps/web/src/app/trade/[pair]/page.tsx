@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { createChart, ColorType } from "lightweight-charts";
 
 // ============================================================
-// 1. BINANCE API — REAL DATA FUNCTIONS
+// 1. BINANCE API — REAL DATA
 // ============================================================
 
 const fetchRealOrderBook = async (symbol: string) => {
@@ -70,7 +70,7 @@ const fetchRealCoins = async () => {
 };
 
 // ============================================================
-// 2. CHART COMPONENT (FIXED)
+// 2. CHART COMPONENT
 // ============================================================
 function RealChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,13 +125,7 @@ function RealChart({ symbol }: { symbol: string }) {
                 close: price,
               });
             } else {
-              series.update({ 
-                time: now as any, 
-                open: price, 
-                high: price, 
-                low: price, 
-                close: price 
-              });
+              series.update({ time: now as any, open: price, high: price, low: price, close: price });
             }
           }
         }
@@ -167,6 +161,7 @@ export default function TradePage() {
   const [selectedCoin, setSelectedCoin] = useState(displaySymbol);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const [price, setPrice] = useState(0);
   const [priceChange, setPriceChange] = useState(0);
@@ -180,6 +175,8 @@ export default function TradePage() {
   const [amount, setAmount] = useState(0);
   const [showTPSL, setShowTPSL] = useState(false);
   const [tradePrice, setTradePrice] = useState(0);
+
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadCoins = async () => {
@@ -234,13 +231,28 @@ export default function TradePage() {
     return () => clearInterval(interval);
   }, [selectedCoin]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleCoinSelect = async (coin: string) => {
     setSelectedCoin(coin);
+    setSearchTerm("");
+    setShowDropdown(false);
     await updateData(coin);
     window.history.pushState(null, "", `/trade/${coin}USDT`);
   };
 
-  const filteredCoins = coins.filter((c) => c.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCoins = coins.filter((c) =>
+    c.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const total = tradePrice * amount;
   const { bids, asks } = orderBook;
 
@@ -280,40 +292,68 @@ export default function TradePage() {
 
       {/* MAIN LAYOUT */}
       <div className="flex-1 flex flex-col min-h-0">
-        {/* TOP ROW: PAIR HEADER + SEARCH */}
-        <div className="bg-[#111] border-b border-gray-700 px-4 py-2 flex flex-wrap items-center gap-3 flex-shrink-0">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search 100+ coins..."
-            className="w-48 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-yellow-500"
-          />
-          <div className="flex flex-wrap gap-1">
-            {filteredCoins.slice(0, 15).map((coin) => (
-              <button
-                key={coin}
-                onClick={() => handleCoinSelect(coin)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                  selectedCoin === coin ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/50" : "bg-[#2b2d33] text-gray-400 hover:text-white"
-                }`}
-              >
-                {coin}/USDT
-              </button>
-            ))}
+        {/* COIN SEARCH + PAIR HEADER */}
+        <div className="bg-[#111] border-b border-gray-700 px-4 py-3 flex flex-wrap items-center gap-4 flex-shrink-0">
+          {/* Coin Search */}
+          <div className="relative w-64" ref={searchRef}>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Search 100+ coins..."
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+            />
+            {showDropdown && searchTerm.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg max-h-60 overflow-y-auto z-50">
+                {filteredCoins.slice(0, 20).map((coin) => (
+                  <button
+                    key={coin}
+                    onClick={() => handleCoinSelect(coin)}
+                    className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800 transition flex items-center justify-between"
+                  >
+                    <span>{coin}/USDT</span>
+                    {selectedCoin === coin && <span className="text-yellow-400 text-xs">✓</span>}
+                  </button>
+                ))}
+                {filteredCoins.length === 0 && (
+                  <div className="px-4 py-2 text-sm text-gray-500">No coins found</div>
+                )}
+              </div>
+            )}
           </div>
-          <div className="ml-auto flex items-center gap-4 text-sm">
-            <span className="text-2xl font-mono font-bold text-white">${price > 0 ? price.toFixed(2) : "---"}</span>
-            <span className={`font-medium ${priceChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-              {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
-            </span>
-            <div className="text-xs text-gray-500 hidden md:block">
-              H: {high > 0 ? high.toFixed(2) : "---"} L: {low > 0 ? low.toFixed(2) : "---"}
+
+          {/* Selected Coin + Price + Change */}
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center text-xl font-bold text-black">
+                {selectedCoin.slice(0, 2)}
+              </div>
+              <div>
+                <div className="text-xl font-bold text-white">{selectedCoin}/USDT</div>
+                <div className="text-xs text-gray-500">Real-time</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-2xl font-mono font-bold text-white">
+                ${price > 0 ? price.toFixed(2) : "---"}
+              </span>
+              <span className={`text-lg font-medium ${priceChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
+              </span>
+            </div>
+            <div className="flex gap-4 text-xs text-gray-500 ml-auto">
+              <span>H: <span className="text-white">{high > 0 ? high.toFixed(2) : "---"}</span></span>
+              <span>L: <span className="text-white">{low > 0 ? low.toFixed(2) : "---"}</span></span>
+              <span>Vol: <span className="text-white">{volume > 0 ? volume.toFixed(2) : "---"}</span></span>
             </div>
           </div>
         </div>
 
-        {/* BOTTOM ROW: CHART + ORDER BOOK + TRADE */}
+        {/* BOTTOM ROW: CHART + TRADE + ORDER BOOK */}
         <div className="flex-1 flex min-h-0">
           {/* LEFT: CHART */}
           <div className="flex-1 flex flex-col min-w-0 border-r border-gray-700">
@@ -324,15 +364,103 @@ export default function TradePage() {
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
               <RealChart symbol={selectedCoin} />
             </div>
-            <div className="bg-[#111] px-4 py-1 border-t border-gray-700 flex gap-4 text-xs flex-shrink-0">
-              <div>VOL <span className="text-white">{volume > 0 ? volume.toFixed(2) : "---"}</span></div>
-            </div>
           </div>
 
-          {/* RIGHT: ORDER BOOK + TRADE */}
+          {/* RIGHT: TRADE FORM (TOP) + ORDER BOOK (BOTTOM) */}
           <div className="w-80 flex flex-col flex-shrink-0 bg-[#0A0A0A]">
-            {/* REAL ORDER BOOK */}
-            <div className="flex-1 border-b border-gray-700 p-2 overflow-y-auto min-h-0">
+            {/* TRADE FORM - OOPAR */}
+            <div className="p-4 bg-[#111] border-b border-gray-700 flex-shrink-0">
+              <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
+                <button
+                  onClick={() => setSide("buy")}
+                  className={`flex-1 py-2.5 text-sm font-bold transition ${side === "buy" ? "bg-green-500 text-black" : "text-gray-400"}`}
+                >
+                  Buy
+                </button>
+                <button
+                  onClick={() => setSide("sell")}
+                  className={`flex-1 py-2.5 text-sm font-bold transition ${side === "sell" ? "bg-red-500 text-white" : "text-gray-400"}`}
+                >
+                  Sell
+                </button>
+              </div>
+
+              <div className="flex gap-1 mb-3 text-xs">
+                {["limit", "market", "tpSl"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setOrderType(type as any)}
+                    className={`flex-1 py-1.5 rounded transition ${orderType === type ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  >
+                    {type === "tpSl" ? "TP/SL" : type.toUpperCase()}
+                  </button>
+                ))}
+                <div className="ml-auto flex items-center gap-1">
+                  <span className="text-[10px] text-gray-500">TP/SL</span>
+                  <button
+                    onClick={() => setShowTPSL(!showTPSL)}
+                    className={`w-7 h-4 rounded-full transition ${showTPSL ? "bg-yellow-500" : "bg-gray-700"}`}
+                  >
+                    <div className={`w-3 h-3 bg-white rounded-full transition transform ${showTPSL ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <div className="flex justify-between text-[10px] text-gray-500"><span>Price</span><span>0.0142</span></div>
+                  <input
+                    type="number"
+                    value={tradePrice || ""}
+                    onChange={(e) => setTradePrice(parseFloat(e.target.value))}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500"
+                  />
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500">Amount</div>
+                  <input
+                    type="number"
+                    value={amount || ""}
+                    onChange={(e) => setAmount(parseFloat(e.target.value))}
+                    placeholder="0"
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-1 text-xs mb-2">
+                {[25, 50, 75, 100].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setAmount(0.01 * p)}
+                    className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs"
+                  >
+                    {p}%
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs text-gray-500 mb-2">
+                Total <span className="text-white font-bold">${total.toFixed(2)}</span>
+              </div>
+
+              {showTPSL && (
+                <div className="grid grid-cols-2 gap-2 mb-2 border-t border-gray-700 pt-2">
+                  <input type="text" placeholder="TP price" className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white" />
+                  <input type="text" placeholder="SL price" className="bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white" />
+                </div>
+              )}
+
+              <button
+                onClick={() => alert(`${side === "buy" ? "Buy" : "Sell"} ${selectedCoin} @ $${tradePrice}`)}
+                className={`w-full py-2.5 rounded-xl text-sm font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}
+              >
+                {side === "buy" ? "Buy" : "Sell"} {selectedCoin}
+              </button>
+            </div>
+
+            {/* ORDER BOOK - NECHAY */}
+            <div className="flex-1 p-2 overflow-y-auto min-h-0 bg-[#0A0A0A]">
               <div className="text-yellow-400 text-xs font-medium mb-1">Order Book</div>
               <div className="text-[10px] text-gray-500 grid grid-cols-3 mb-0.5">
                 <div>Price</div>
@@ -356,55 +484,6 @@ export default function TradePage() {
                   <div className="text-right text-gray-300">{(bid.price * bid.amount).toFixed(2)}</div>
                 </div>
               ))}
-            </div>
-
-            {/* TRADE FORM */}
-            <div className="p-3 bg-[#111] flex-shrink-0">
-              <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
-                <button onClick={() => setSide("buy")} className={`flex-1 py-2 text-sm font-bold transition ${side === "buy" ? "bg-green-500 text-black" : "text-gray-400"}`}>Buy</button>
-                <button onClick={() => setSide("sell")} className={`flex-1 py-2 text-sm font-bold transition ${side === "sell" ? "bg-red-500 text-white" : "text-gray-400"}`}>Sell</button>
-              </div>
-
-              <div className="flex gap-1 mb-2 text-[10px]">
-                {["limit", "market", "tpSl"].map((type) => (
-                  <button key={type} onClick={() => setOrderType(type as any)} className={`flex-1 py-1 rounded transition ${orderType === type ? "bg-gray-700 text-white" : "text-gray-400"}`}>
-                    {type === "tpSl" ? "TP/SL" : type.toUpperCase()}
-                  </button>
-                ))}
-                <div className="ml-auto flex items-center gap-1">
-                  <span className="text-[9px] text-gray-500">TP/SL</span>
-                  <button onClick={() => setShowTPSL(!showTPSL)} className={`w-6 h-3.5 rounded-full transition ${showTPSL ? "bg-yellow-500" : "bg-gray-700"}`}>
-                    <div className={`w-2.5 h-2.5 bg-white rounded-full transition transform ${showTPSL ? "translate-x-3" : "translate-x-0.5"}`} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-1.5">
-                <div className="flex justify-between text-[9px] text-gray-500"><span>Price</span><span>Avail: 0.0142</span></div>
-                <input type="number" value={tradePrice || ""} onChange={(e) => setTradePrice(parseFloat(e.target.value))} className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-500" />
-              </div>
-
-              <div className="mb-1.5">
-                <div className="text-[9px] text-gray-500">Amount</div>
-                <input type="number" value={amount || ""} onChange={(e) => setAmount(parseFloat(e.target.value))} placeholder="0" className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-yellow-500" />
-              </div>
-
-              <div className="flex gap-1 text-[10px] mb-1">
-                {[25, 50, 75, 100].map((p) => (<button key={p} onClick={() => setAmount(0.01 * p)} className="flex-1 py-0.5 bg-gray-800 rounded hover:bg-gray-700 text-xs">{p}%</button>))}
-              </div>
-
-              <div className="text-[9px] text-gray-500">Total <span className="text-white font-bold">${total.toFixed(2)}</span></div>
-
-              {showTPSL && (
-                <div className="mt-1.5 space-y-1 border-t border-gray-700 pt-1.5">
-                  <input type="text" placeholder="TP price" className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white" />
-                  <input type="text" placeholder="SL price" className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white" />
-                </div>
-              )}
-
-              <button onClick={() => alert(`${side === "buy" ? "Buy" : "Sell"} ${selectedCoin} @ $${tradePrice}`)} className={`w-full mt-2 py-2 rounded-xl text-sm font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}>
-                {side === "buy" ? "Buy" : "Sell"} {selectedCoin}
-              </button>
             </div>
           </div>
         </div>
