@@ -18,7 +18,6 @@ export default function MexcStyleTradePage() {
   const currentPrice = 1.6667;
   const priceChange = 0.59;
 
-  // Timeframes with dropdown
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
@@ -116,7 +115,7 @@ export default function MexcStyleTradePage() {
             </div>
 
             {/* Timeframes with Dropdown Arrow */}
-            <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center gap-1 text-xs relative">
               {visibleTimeframes.map((tf) => (
                 <button
                   key={tf}
