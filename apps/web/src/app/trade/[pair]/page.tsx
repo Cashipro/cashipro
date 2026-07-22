@@ -1,50 +1,50 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-export default function MexcSpotTradingPage() {
+export default function CashiProTradePage() {
   const params = useParams();
   const pair = (params.pair as string) || 'BTCUSDT';
   
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
 
-  const currentPrice = 1.6667;
+  const currentPrice = 66260.9;
   const priceChange = 0.59;
 
   const orderBookBids = [
-    { price: 1.6699, amount: 1462.09, total: 2441.5440 },
-    { price: 1.6698, amount: 151.95, total: 253.7261 },
-    { price: 1.6695, amount: 288.71, total: 482.0013 },
-    { price: 1.6690, amount: 263.03, total: 438.9970 },
-    { price: 1.6687, amount: 279.26, total: 466.0011 },
+    { price: 66260, amount: 1462.09, total: 2441.54 },
+    { price: 66255, amount: 151.95, total: 253.72 },
+    { price: 66250, amount: 288.71, total: 482.00 },
+    { price: 66245, amount: 263.03, total: 438.99 },
+    { price: 66240, amount: 279.26, total: 466.00 },
   ];
 
   const orderBookAsks = [
-    { price: 1.6679, amount: 1237.48, total: 2063.9928 },
-    { price: 1.6677, amount: 281.83, total: 470.0078 },
-    { price: 1.6673, amount: 268.10, total: 447.0031 },
-    { price: 1.6671, amount: 258.53, total: 430.9953 },
-    { price: 1.6667, amount: 105.60, total: 176.0035 },
+    { price: 66265, amount: 1237.48, total: 2063.99 },
+    { price: 66270, amount: 281.83, total: 470.00 },
+    { price: 66275, amount: 268.10, total: 447.00 },
+    { price: 66280, amount: 258.53, total: 430.99 },
+    { price: 66285, amount: 105.60, total: 176.00 },
   ];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-hidden">
-      {/* Top Navigation */}
+      {/* Top Navigation - CashiPro Branding */}
       <div className="bg-black border-b border-gray-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-bold">M</div>
-            <span className="text-2xl font-bold">MEXC</span>
+            <div className="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center font-bold text-black text-sm">C</div>
+            <span className="text-2xl font-bold text-white">CashiPro</span>
           </Link>
 
           <nav className="hidden md:flex gap-6 text-sm">
-            <Link href="/markets" className="text-gray-400 hover:text-white">Markets</Link>
-            <Link href="/trade/BTCUSDT" className="text-blue-400 font-medium">Spot</Link>
-            <Link href="/futures" className="text-gray-400 hover:text-white">Futures</Link>
-            <Link href="/earn" className="text-gray-400 hover:text-white">Earn</Link>
+            <Link href="/markets" className="text-gray-400 hover:text-yellow-400">Markets</Link>
+            <Link href="/trade/BTCUSDT" className="text-yellow-400 font-medium">Spot</Link>
+            <Link href="/futures" className="text-gray-400 hover:text-yellow-400">Futures</Link>
+            <Link href="/earn" className="text-gray-400 hover:text-yellow-400">Earn</Link>
           </nav>
         </div>
 
@@ -53,42 +53,42 @@ export default function MexcSpotTradingPage() {
           <Link href="/login">
             <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-700">👤</div>
           </Link>
-          <button className="md:hidden text-2xl">☰</button>
+          <button className="md:hidden text-2xl text-white">☰</button>
         </div>
       </div>
 
-      {/* Trading Pair Header */}
+      {/* Trading Pair Header - CashiPro Colors */}
       <div className="bg-[#111] border-b border-gray-800 px-4 md:px-6 py-4 flex flex-wrap items-center gap-4 md:gap-8">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-xl font-bold">M</div>
+          <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-xl font-bold text-black">C</div>
           <div>
-            <div className="text-2xl font-semibold">{pair}</div>
-            <div className="text-sm text-gray-500">MX Token</div>
+            <div className="text-2xl font-semibold text-white">{pair}</div>
+            <div className="text-sm text-gray-500">CashiPro Token</div>
           </div>
         </div>
 
         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-8">
           <div>
             <div className="text-2xl md:text-3xl font-mono font-semibold text-green-400">
-              {currentPrice}
+              {currentPrice.toLocaleString()}
             </div>
             <div className="text-green-400 text-sm">+{priceChange}%</div>
           </div>
           <div>
             <div className="text-xs text-gray-500">24H High</div>
-            <div className="font-mono">1.6700</div>
+            <div className="font-mono text-white">66,500</div>
           </div>
           <div>
             <div className="text-xs text-gray-500">24H Low</div>
-            <div className="font-mono">1.6537</div>
+            <div className="font-mono text-white">65,800</div>
           </div>
           <div>
             <div className="text-xs text-gray-500">24H Vol</div>
-            <div className="font-mono">1.15M</div>
+            <div className="font-mono text-white">4.43B</div>
           </div>
           <div>
             <div className="text-xs text-gray-500">24H Amount</div>
-            <div className="font-mono">1.91M</div>
+            <div className="font-mono text-white">1.91M</div>
           </div>
         </div>
       </div>
@@ -98,10 +98,10 @@ export default function MexcSpotTradingPage() {
         {/* Left - Chart Area */}
         <div className="flex-1 flex flex-col border-r border-gray-800">
           <div className="border-b border-gray-800 px-6 py-3 flex items-center gap-6 text-sm overflow-x-auto">
-            <div className="text-blue-400 border-b border-blue-400 pb-2 whitespace-nowrap">Chart</div>
+            <div className="text-yellow-400 border-b border-yellow-400 pb-2 whitespace-nowrap">Chart</div>
             <div className="text-gray-400 whitespace-nowrap">Info</div>
             <div className="text-gray-400 whitespace-nowrap">Trading Data</div>
-            <div className="ml-auto text-sm bg-gray-800 px-3 py-1 rounded whitespace-nowrap">15m</div>
+            <div className="ml-auto text-sm bg-gray-800 px-3 py-1 rounded whitespace-nowrap text-white">15m</div>
           </div>
 
           {/* Chart Placeholder */}
@@ -119,11 +119,11 @@ export default function MexcSpotTradingPage() {
 
           {/* Bottom Stats */}
           <div className="p-4 text-xs grid grid-cols-2 md:grid-cols-5 gap-4 border-t border-gray-800 bg-[#111]">
-            <div>VOL(MX) <span className="text-white">81.37</span></div>
-            <div>VOL(USDT) <span className="text-white">135.62K</span></div>
-            <div>MA5 <span className="text-yellow-400">1.6674</span></div>
-            <div>MA10 <span className="text-purple-400">1.6679</span></div>
-            <div>MA20 <span className="text-blue-400">1.6652</span></div>
+            <div className="text-gray-400">VOL <span className="text-white">81.37</span></div>
+            <div className="text-gray-400">VOL(USDT) <span className="text-white">135.62K</span></div>
+            <div className="text-gray-400">MA5 <span className="text-yellow-400">66,260</span></div>
+            <div className="text-gray-400">MA10 <span className="text-purple-400">66,240</span></div>
+            <div className="text-gray-400">MA20 <span className="text-blue-400">66,200</span></div>
           </div>
         </div>
 
@@ -133,14 +133,14 @@ export default function MexcSpotTradingPage() {
           <div className="flex-1 overflow-auto border-b border-gray-800">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between text-sm">
               <div className="flex gap-6">
-                <span className="text-blue-400">Order Book</span>
+                <span className="text-yellow-400">Order Book</span>
                 <span className="text-gray-400">Market Trades</span>
               </div>
-              <div>0.0001</div>
+              <div className="text-gray-400">0.0001</div>
             </div>
 
             {/* Asks */}
-            <div className="px-4 py-1 text-xs text-red-400">
+            <div className="px-4 py-1 text-xs">
               {orderBookAsks.map((item, i) => (
                 <div key={i} className="grid grid-cols-3 py-1 text-sm">
                   <div className="font-mono text-red-400">{item.price}</div>
@@ -150,13 +150,13 @@ export default function MexcSpotTradingPage() {
               ))}
             </div>
 
-            <div className="px-4 py-3 border-y border-gray-800 bg-[#1A1A1A] text-center text-lg font-mono font-semibold flex items-center justify-center gap-2">
-              1.6667 
-              <span className="text-green-400 text-sm">↑ $1.66</span>
+            <div className="px-4 py-3 border-y border-gray-800 bg-[#1A1A1A] text-center text-lg font-mono font-semibold flex items-center justify-center gap-2 text-white">
+              {currentPrice.toLocaleString()}
+              <span className="text-green-400 text-sm">↑ $66,260</span>
             </div>
 
             {/* Bids */}
-            <div className="px-4 py-1 text-xs text-green-400">
+            <div className="px-4 py-1 text-xs">
               {orderBookBids.map((item, i) => (
                 <div key={i} className="grid grid-cols-3 py-1 text-sm">
                   <div className="font-mono text-green-400">{item.price}</div>
@@ -187,13 +187,13 @@ export default function MexcSpotTradingPage() {
             <div className="flex gap-2 mb-4 text-sm">
               <button 
                 onClick={() => setOrderType('limit')}
-                className={`flex-1 py-2 rounded ${orderType === 'limit' ? 'bg-gray-700' : 'bg-transparent text-gray-400'}`}
+                className={`flex-1 py-2 rounded ${orderType === 'limit' ? 'bg-gray-700 text-white' : 'bg-transparent text-gray-400'}`}
               >
                 Limit
               </button>
               <button 
                 onClick={() => setOrderType('market')}
-                className={`flex-1 py-2 rounded ${orderType === 'market' ? 'bg-gray-700' : 'bg-transparent text-gray-400'}`}
+                className={`flex-1 py-2 rounded ${orderType === 'market' ? 'bg-gray-700 text-white' : 'bg-transparent text-gray-400'}`}
               >
                 Market
               </button>
@@ -204,23 +204,23 @@ export default function MexcSpotTradingPage() {
                 <div className="text-xs text-gray-500 mb-1">Price (USDT)</div>
                 <input 
                   type="text" 
-                  defaultValue="1.6667" 
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-3 font-mono focus:outline-none focus:border-blue-500"
+                  defaultValue={currentPrice.toLocaleString()} 
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-3 font-mono text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
               <div>
-                <div className="text-xs text-gray-500 mb-1">Amount (MX)</div>
+                <div className="text-xs text-gray-500 mb-1">Amount</div>
                 <input 
                   type="text" 
                   placeholder="0"
-                  className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-3 font-mono focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-3 font-mono text-white focus:outline-none focus:border-yellow-400"
                 />
               </div>
 
               <div className="flex justify-between text-xs text-gray-500">
                 <span>Available</span>
-                <span>0.0142 USDT</span>
+                <span className="text-white">0.0142 USDT</span>
               </div>
 
               <div className="pt-2">
@@ -238,7 +238,7 @@ export default function MexcSpotTradingPage() {
       {/* Bottom Section */}
       <div className="h-56 bg-[#111] border-t border-gray-800 p-4 text-sm flex flex-col">
         <div className="flex gap-8 border-b border-gray-800 pb-3 overflow-x-auto">
-          <div className="text-blue-400 border-b border-blue-400 whitespace-nowrap">Open Orders (0)</div>
+          <div className="text-yellow-400 border-b border-yellow-400 whitespace-nowrap">Open Orders (0)</div>
           <div className="text-gray-400 whitespace-nowrap">Order History</div>
           <div className="text-gray-400 whitespace-nowrap">Trade History</div>
         </div>
