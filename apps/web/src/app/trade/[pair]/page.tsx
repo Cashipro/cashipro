@@ -5,31 +5,15 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-// TradingView Chart — Dynamic Import (SSR off)
 const TradingViewChart = dynamic(
   () => import("@/components/TradingViewChart"),
-  { ssr: false, loading: () => (
-    <div className="flex items-center justify-center h-full min-h-[300px] bg-[#0F1217]">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="text-gray-500 text-sm mt-2">Loading chart...</p>
-      </div>
-    </div>
-  )}
+  { ssr: false }
 );
 
 // ===== TYPE DEFINITIONS =====
 interface Order {
   price: number;
   amount: number;
-}
-
-interface Trade {
-  buyOrderId: number;
-  sellOrderId: number;
-  price: number;
-  amount: number;
-  timestamp: Date;
 }
 
 export default function TradePage() {
@@ -43,15 +27,28 @@ export default function TradePage() {
   const [activeTimeframe, setActiveTimeframe] = useState("15m");
   const [showTimeframes, setShowTimeframes] = useState(false);
 
-  // ===== REAL DATA STATE =====
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
   const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+
+  // ===== TIMEFRAME TO INTERVAL CONVERTER =====
+  const getInterval = (tf: string): string => {
+    const map: Record<string, string> = {
+      "1m": "1",
+      "5m": "5",
+      "15m": "15",
+      "30m": "30",
+      "1H": "60",
+      "4H": "240",
+      "1D": "1D",
+      "1W": "1W",
+      "1M": "1M",
+    };
+    return map[tf] || "15";
+  };
 
   // ===== FETCH ORDER BOOK =====
   const fetchOrderBook = async () => {
@@ -64,7 +61,6 @@ export default function TradePage() {
           setPrice(data.orderBook.bids[0].price);
         }
       } else {
-        // Mock order book
         const bids: Order[] = [];
         const asks: Order[] = [];
         const basePrice = price;
@@ -85,19 +81,6 @@ export default function TradePage() {
     }
   };
 
-  // ===== FETCH TRADES =====
-  const fetchTrades = async () => {
-    try {
-      const res = await fetch("/api/trades?limit=20");
-      const data = await res.json();
-      if (data.trades && data.trades.length > 0) {
-        setTrades(data.trades);
-      }
-    } catch (error) {
-      console.error("Error fetching trades:", error);
-    }
-  };
-
   // ===== PLACE ORDER =====
   const placeOrder = async (side: "buy" | "sell", price: number, amount: number) => {
     try {
@@ -109,31 +92,22 @@ export default function TradePage() {
       const data = await res.json();
       if (data.success) {
         fetchOrderBook();
-        fetchTrades();
       }
     } catch (error) {
       console.error("Error placing order:", error);
     }
   };
 
-  // ===== REAL-TIME DATA GENERATOR =====
+  // ===== REAL-TIME DATA =====
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchOrderBook(), fetchTrades()]);
-      setLoading(false);
-    };
-    loadData();
-
+    fetchOrderBook();
     const interval = setInterval(() => {
       setPrice(prev => {
         const change = (Math.random() - 0.5) * 50;
         return Math.round((prev + change) * 100) / 100;
       });
       fetchOrderBook();
-      fetchTrades();
     }, 3000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -192,7 +166,7 @@ export default function TradePage() {
 
       {/* ===== MAIN LAYOUT ===== */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        {/* LEFT: Chart with TradingView */}
+        {/* LEFT: Chart */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
           <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
             <div className="flex gap-4 text-sm">
@@ -201,6 +175,8 @@ export default function TradePage() {
               <span className="text-gray-400">Trading Data</span>
               <span className="text-gray-400">Compare</span>
             </div>
+
+            {/* Timeframes */}
             <div className="flex items-center gap-1 text-xs relative">
               {visibleTimeframes.map((tf) => (
                 <button
@@ -248,6 +224,7 @@ export default function TradePage() {
               symbol={`BINANCE:${pair}`} 
               theme="dark" 
               height={450} 
+              interval={getInterval(activeTimeframe)}
             />
           </div>
 
