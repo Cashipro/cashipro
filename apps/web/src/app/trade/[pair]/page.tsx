@@ -3,19 +3,50 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import dynamic from "next/dynamic";
-
-const TradingViewChart = dynamic(
-  () => import("@/components/TradingViewChart"),
-  { ssr: false }
-);
 
 // ===== COINS LIST =====
 const COINS = [
-  "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
-  "ADAUSDT", "DOGEUSDT", "DOTUSDT", "MATICUSDT", "LINKUSDT",
-  "AVAXUSDT", "UNIUSDT", "ATOMUSDT", "ETCUSDT", "FILUSDT",
+  "BTC", "ETH", "BNB", "SOL", "XRP",
+  "ADA", "DOGE", "DOT", "MATIC", "LINK",
+  "AVAX", "UNI", "ATOM", "ETC", "FIL",
 ];
+
+// ===== CMC CHART COMPONENT =====
+function CMCChart({ symbol }: { symbol: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetId = `cmc-widget-${Date.now()}`;
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const script = document.createElement("script");
+    script.src = "https://files.coinmarketcap.com/static/widget/coinPriceBlock.js";
+    script.async = true;
+
+    script.onload = () => {
+      if (containerRef.current) {
+        const widget = document.createElement("div");
+        widget.id = widgetId;
+        widget.setAttribute("coins", "1,1027,825");
+        widget.setAttribute("currency", "USD");
+        widget.setAttribute("theme", "dark");
+        widget.setAttribute("transparent", "false");
+        widget.setAttribute("show-symbol-logo", "true");
+        containerRef.current.appendChild(widget);
+      }
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
+      }
+    };
+  }, [symbol]);
+
+  return <div ref={containerRef} className="w-full h-full min-h-[300px]" />;
+}
 
 // ===== TYPE DEFINITIONS =====
 interface Order {
@@ -31,20 +62,15 @@ export default function TradePage() {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
   const [showTPSL, setShowTPSL] = useState(false);
-  const [activeTimeframe, setActiveTimeframe] = useState("15m");
-  const [showTimeframes, setShowTimeframes] = useState(false);
   const [showCoinSearch, setShowCoinSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCoin, setSelectedCoin] = useState(pair);
 
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
   const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
-  const [selectedCoin, setSelectedCoin] = useState(pair);
 
   const searchRef = useRef<HTMLDivElement>(null);
-
-  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
-  const visibleTimeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
   const filteredCoins = COINS.filter(c => 
     c.toLowerCase().includes(searchQuery.toLowerCase())
@@ -60,21 +86,6 @@ export default function TradePage() {
         if (data.orderBook.bids.length > 0) {
           setPrice(data.orderBook.bids[0].price);
         }
-      } else {
-        const bids: Order[] = [];
-        const asks: Order[] = [];
-        const basePrice = price;
-        for (let i = 0; i < 8; i++) {
-          bids.push({
-            price: Math.round((basePrice - (i + 1) * 5) * 100) / 100,
-            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
-          });
-          asks.push({
-            price: Math.round((basePrice + (i + 1) * 5) * 100) / 100,
-            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
-          });
-        }
-        setOrderBook({ bids, asks });
       }
     } catch (error) {
       console.error("Error fetching order book:", error);
@@ -111,7 +122,7 @@ export default function TradePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // ===== CLOSE SEARCH ON OUTSIDE CLICK =====
+  // ===== CLOSE SEARCH =====
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -126,7 +137,7 @@ export default function TradePage() {
     setSelectedCoin(coin);
     setShowCoinSearch(false);
     setSearchQuery("");
-    window.location.href = `/trade/${coin}`;
+    window.location.href = `/trade/${coin}USDT`;
   };
 
   const bids = orderBook.bids || [];
@@ -196,7 +207,7 @@ export default function TradePage() {
                       onClick={() => handleCoinSelect(coin)}
                       className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition"
                     >
-                      {coin}
+                      {coin}/USDT
                     </button>
                   ))
                 ) : (
@@ -232,56 +243,11 @@ export default function TradePage() {
               <span className="text-gray-400">Trading Data</span>
               <span className="text-gray-400">Compare</span>
             </div>
-
-            {/* Timeframes */}
-            <div className="flex items-center gap-1 text-xs relative">
-              {visibleTimeframes.map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`px-2 py-1 rounded transition ${
-                    activeTimeframe === tf
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-400 hover:bg-gray-800"
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowTimeframes(!showTimeframes)}
-                className="px-1.5 py-1 text-gray-400 hover:text-white transition"
-              >
-                ▼
-              </button>
-              {showTimeframes && (
-                <div className="absolute top-full right-0 mt-1 bg-[#1A1A1A] border border-gray-700 rounded-lg p-1 z-10 min-w-[60px]">
-                  {timeframes.map((tf) => (
-                    <button
-                      key={tf}
-                      onClick={() => {
-                        setActiveTimeframe(tf);
-                        setShowTimeframes(false);
-                      }}
-                      className={`block w-full text-left px-3 py-1 text-xs rounded hover:bg-gray-800 transition ${
-                        activeTimeframe === tf ? "text-blue-400" : "text-gray-400"
-                      }`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* TradingView Chart - CHART ONLY */}
+          {/* CMC Chart */}
           <div className="flex-1 bg-[#0F1217] p-2 min-h-[250px]">
-            <TradingViewChart 
-              symbol={`BINANCE:${pair}`} 
-              theme="dark" 
-              height={450} 
-            />
+            <CMCChart symbol={displaySymbol} />
           </div>
 
           <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
@@ -325,7 +291,6 @@ export default function TradePage() {
 
           {/* SPOT SECTION */}
           <div className="flex-1 flex flex-col bg-[#111] p-3">
-            {/* Buy/Sell */}
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
@@ -345,7 +310,6 @@ export default function TradePage() {
               </button>
             </div>
 
-            {/* Order Type Tabs */}
             <div className="flex items-center gap-1 mb-2 text-xs">
               <button
                 onClick={() => setOrderType("limit")}
@@ -386,7 +350,6 @@ export default function TradePage() {
               </div>
             </div>
 
-            {/* Price */}
             <div className="mb-1.5">
               <div className="flex justify-between text-[10px] text-gray-500">
                 <span>Price (USDT)</span>
@@ -399,7 +362,6 @@ export default function TradePage() {
               />
             </div>
 
-            {/* Amount */}
             <div className="mb-1.5">
               <div className="text-[10px] text-gray-500">Amount</div>
               <input
@@ -409,7 +371,6 @@ export default function TradePage() {
               />
             </div>
 
-            {/* Quick % */}
             <div className="flex gap-1 text-xs">
               {[0, 25, 50, 75, 100].map((p) => (
                 <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
@@ -418,10 +379,8 @@ export default function TradePage() {
               ))}
             </div>
 
-            {/* Total */}
             <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
 
-            {/* TP/SL Boxes */}
             {showTPSL && (
               <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
                 <div>
@@ -443,7 +402,6 @@ export default function TradePage() {
               </div>
             )}
 
-            {/* Trade Button */}
             <button
               onClick={() => {
                 const inputs = document.querySelectorAll('input[type="text"]');
