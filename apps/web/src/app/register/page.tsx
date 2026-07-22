@@ -2,23 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [passwordStrength, setPasswordStrength] = useState(0);
-
-  const checkPasswordStrength = (pass: string) => {
-    let strength = 0;
-    if (pass.length >= 8) strength++;
-    if (/[a-z]/.test(pass) && /[A-Z]/.test(pass)) strength++;
-    if (/\d/.test(pass)) strength++;
-    if (/[^a-zA-Z0-9]/.test(pass)) strength++;
-    setPasswordStrength(strength);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    setIsLoading(true);
+    setError("");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setIsLoading(false);
+    router.push("/dashboard");
   };
 
   return (
@@ -33,16 +40,23 @@ export default function RegisterPage() {
           <p className="text-sm text-gray-500 mt-1">Start trading with zero fees</p>
         </div>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Username */}
           <div>
             <label className="text-sm text-gray-400 block mb-1.5">Username</label>
             <input
               type="text"
-              placeholder="johndoe"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition-colors"
+              placeholder="johndoe"
+              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition"
+              required
             />
           </div>
 
@@ -51,10 +65,11 @@ export default function RegisterPage() {
             <label className="text-sm text-gray-400 block mb-1.5">Email Address</label>
             <input
               type="email"
-              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition-colors"
+              placeholder="you@example.com"
+              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition"
+              required
             />
           </div>
 
@@ -63,40 +78,12 @@ export default function RegisterPage() {
             <label className="text-sm text-gray-400 block mb-1.5">Password</label>
             <input
               type="password"
-              placeholder="••••••••"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                checkPasswordStrength(e.target.value);
-              }}
-              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition-colors"
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition"
+              required
             />
-            {/* Password Strength Bar */}
-            {password && (
-              <div className="mt-2 flex gap-1">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-1 flex-1 rounded ${
-                      i < passwordStrength
-                        ? i < 2
-                          ? "bg-red-500"
-                          : i < 3
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                        : "bg-[#2b2d33]"
-                    }`}
-                  />
-                ))}
-                <span className="text-xs text-gray-500 ml-2">
-                  {passwordStrength === 0 && "Weak"}
-                  {passwordStrength === 1 && "Fair"}
-                  {passwordStrength === 2 && "Good"}
-                  {passwordStrength === 3 && "Strong"}
-                  {passwordStrength === 4 && "Very Strong"}
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Confirm Password */}
@@ -104,17 +91,43 @@ export default function RegisterPage() {
             <label className="text-sm text-gray-400 block mb-1.5">Confirm Password</label>
             <input
               type="password"
-              placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full bg-black border rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition-colors ${
+              placeholder="••••••••"
+              className={`w-full bg-black border rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition ${
                 confirmPassword && password !== confirmPassword
                   ? "border-red-500"
                   : "border-[#2b2d33]"
               }`}
+              required
             />
             {confirmPassword && password !== confirmPassword && (
               <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+            )}
+          </div>
+
+          {/* 🔥 REFERRAL CODE BOX */}
+          <div>
+            <label className="text-sm text-gray-400 block mb-1.5">
+              Referral Code <span className="text-gray-500">(Optional)</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                placeholder="Enter referral code"
+                className="flex-1 bg-black border border-[#2b2d33] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400 transition"
+              />
+              <button
+                type="button"
+                className="px-4 py-3 bg-[#2b2d33] text-gray-400 rounded-xl hover:bg-[#3b3d43] hover:text-white transition text-sm"
+              >
+                Apply
+              </button>
+            </div>
+            {referralCode && (
+              <p className="text-xs text-yellow-400 mt-1">✅ Referral code applied!</p>
             )}
           </div>
 
@@ -125,6 +138,7 @@ export default function RegisterPage() {
               checked={agreeTerms}
               onChange={(e) => setAgreeTerms(e.target.checked)}
               className="w-4 h-4 rounded border-[#2b2d33] bg-black text-yellow-400 focus:ring-yellow-400 focus:ring-offset-0"
+              required
             />
             <label className="ml-2 text-sm text-gray-400">
               I agree to the{" "}
@@ -138,15 +152,12 @@ export default function RegisterPage() {
             </label>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
-            disabled={!agreeTerms}
-            className={`w-full bg-yellow-500 text-black font-bold py-3 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
-              !agreeTerms ? "opacity-50 cursor-not-allowed" : "hover:bg-yellow-400"
-            }`}
+            disabled={isLoading}
+            className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50"
           >
-            Create Account
+            {isLoading ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
@@ -176,7 +187,6 @@ export default function RegisterPage() {
           </button>
         </div>
 
-        {/* Login Link */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-400">
             Already have an account?{" "}
