@@ -9,7 +9,6 @@ import { createChart, ColorType } from "lightweight-charts";
 // 1. BINANCE API — REAL DATA FUNCTIONS
 // ============================================================
 
-// 1.1 Real Order Book
 const fetchRealOrderBook = async (symbol: string) => {
   try {
     const res = await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbol}USDT&limit=10`);
@@ -23,7 +22,6 @@ const fetchRealOrderBook = async (symbol: string) => {
   }
 };
 
-// 1.2 Real 24h Stats
 const fetchRealStats = async (symbol: string) => {
   try {
     const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
@@ -40,7 +38,6 @@ const fetchRealStats = async (symbol: string) => {
   }
 };
 
-// 1.3 Real Klines (Chart Data)
 const fetchRealKlines = async (symbol: string, interval: string = "1m", limit: number = 100) => {
   try {
     const res = await fetch(
@@ -59,7 +56,6 @@ const fetchRealKlines = async (symbol: string, interval: string = "1m", limit: n
   }
 };
 
-// 1.4 Real Coins List
 const fetchRealCoins = async () => {
   try {
     const res = await fetch("https://api.binance.com/api/v3/exchangeInfo");
@@ -74,7 +70,7 @@ const fetchRealCoins = async () => {
 };
 
 // ============================================================
-// 2. CHART COMPONENT (Fixed for trade/[pair])
+// 2. CHART COMPONENT (FIXED)
 // ============================================================
 function RealChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,7 +99,6 @@ function RealChart({ symbol }: { symbol: string }) {
       wickVisible: true,
     });
 
-    // Load real historical data
     fetchRealKlines(symbol).then((data) => {
       if (data.length > 0) {
         series.setData(data);
@@ -111,7 +106,6 @@ function RealChart({ symbol }: { symbol: string }) {
       }
     });
 
-    // Real-time WebSocket
     wsRef.current = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@trade`);
     wsRef.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -131,7 +125,13 @@ function RealChart({ symbol }: { symbol: string }) {
                 close: price,
               });
             } else {
-              series.update({ time: now, open: price, high: price, low: price, close: price });
+              series.update({ 
+                time: now as any, 
+                open: price, 
+                high: price, 
+                low: price, 
+                close: price 
+              });
             }
           }
         }
@@ -158,7 +158,7 @@ function RealChart({ symbol }: { symbol: string }) {
 // ============================================================
 // 3. MAIN COMPONENT
 // ============================================================
-export default function SpotTradingPage() {
+export default function TradePage() {
   const params = useParams();
   const pair = (params.pair as string) || "BTCUSDT";
   const displaySymbol = pair.replace("USDT", "");
@@ -168,7 +168,6 @@ export default function SpotTradingPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Real data states
   const [price, setPrice] = useState(0);
   const [priceChange, setPriceChange] = useState(0);
   const [high, setHigh] = useState(0);
@@ -182,7 +181,6 @@ export default function SpotTradingPage() {
   const [showTPSL, setShowTPSL] = useState(false);
   const [tradePrice, setTradePrice] = useState(0);
 
-  // ===== LOAD COINS =====
   useEffect(() => {
     const loadCoins = async () => {
       const list = await fetchRealCoins();
@@ -199,7 +197,6 @@ export default function SpotTradingPage() {
     loadCoins();
   }, [displaySymbol]);
 
-  // ===== UPDATE ALL DATA =====
   const updateData = async (symbol: string) => {
     const stats = await fetchRealStats(symbol);
     if (stats) {
@@ -214,7 +211,6 @@ export default function SpotTradingPage() {
     setOrderBook(book);
   };
 
-  // ===== WEBSOCKET REAL-TIME PRICE =====
   useEffect(() => {
     if (!selectedCoin) return;
     const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${selectedCoin.toLowerCase()}usdt@trade`);
@@ -229,7 +225,6 @@ export default function SpotTradingPage() {
     return () => ws.close();
   }, [selectedCoin]);
 
-  // ===== REAL ORDER BOOK UPDATE =====
   useEffect(() => {
     if (!selectedCoin) return;
     const interval = setInterval(async () => {
@@ -239,11 +234,9 @@ export default function SpotTradingPage() {
     return () => clearInterval(interval);
   }, [selectedCoin]);
 
-  // ===== COIN SELECT =====
   const handleCoinSelect = async (coin: string) => {
     setSelectedCoin(coin);
     await updateData(coin);
-    // Update URL
     window.history.pushState(null, "", `/trade/${coin}USDT`);
   };
 
