@@ -1,53 +1,131 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 
-export default function MexcStyleTradePage() {
+// Chart component ko dynamic import karo (SSR off)
+const Chart = dynamic(
+  () => import("@/components/Chart"),
+  { ssr: false }
+);
+
+export default function TradePage() {
   const params = useParams();
-  const pair = (params.pair as string) || "MXUSDT";
+  const pair = (params.pair as string) || "BTCUSDT";
   const displaySymbol = pair.replace("USDT", "");
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [orderMode, setOrderMode] = useState<"limit" | "market" | "tpSl">("limit");
-  const [activeTimeframe, setActiveTimeframe] = useState("15m");
+  const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
   const [showTPSL, setShowTPSL] = useState(false);
+  const [activeTimeframe, setActiveTimeframe] = useState("15m");
   const [showTimeframes, setShowTimeframes] = useState(false);
 
-  const currentPrice = 1.6667;
-  const priceChange = 0.59;
+  // ===== REAL DATA STATE =====
+  const [price, setPrice] = useState(65432.50);
+  const [priceChange, setPriceChange] = useState(2.45);
+  const [orderBook, setOrderBook] = useState({ bids: [], asks: [] });
+  const [chartData, setChartData] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
-  const orderBookAsks = [
-    { price: 1.6699, amount: "1,462.09", total: "2,441.54" },
-    { price: 1.6698, amount: "151.95", total: "253.72" },
-    { price: 1.6695, amount: "288.71", total: "482.00" },
-    { price: 1.6690, amount: "263.03", total: "438.99" },
-    { price: 1.6687, amount: "279.26", total: "466.00" },
-    { price: 1.6682, amount: "240.84", total: "401.76" },
-    { price: 1.6679, amount: "1,237.48", total: "2,063.99" },
-    { price: 1.6677, amount: "281.83", total: "470.00" },
-    { price: 1.6673, amount: "268.10", total: "447.00" },
-    { price: 1.6671, amount: "258.53", total: "430.99" },
-    { price: 1.6667, amount: "105.60", total: "176.00" },
-  ];
+  // ===== FETCH CHART DATA =====
+  const fetchChartData = async (interval: string) => {
+    try {
+      const res = await fetch(`/api/klines?symbol=${pair}&interval=${interval}&limit=100`);
+      const data = await res.json();
+      if (data.data) {
+        setChartData(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+    }
+  };
 
-  const orderBookBids = [
-    { price: 1.6666, amount: "27.96", total: "46.59" },
-    { price: 1.6665, amount: "759.70", total: "1,266.04" },
-    { price: 1.6663, amount: "269.46", total: "449.00" },
-    { price: 1.6658, amount: "256.93", total: "427.99" },
-    { price: 1.6653, amount: "1,242.57", total: "2,069.25" },
-    { price: 1.6652, amount: "273.24", total: "454.99" },
-    { price: 1.6650, amount: "275.68", total: "459.00" },
-    { price: 1.6648, amount: "1.72", total: "1.99" },
-    { price: 1.6645, amount: "273.36", total: "455.00" },
-    { price: 1.6641, amount: "258.40", total: "430.00" },
-    { price: 1.6638, amount: "253.64", total: "422.00" },
-  ];
+  // ===== FETCH ORDER BOOK =====
+  const fetchOrderBook = async () => {
+    try {
+      const res = await fetch("/api/orderbook");
+      const data = await res.json();
+      if (data.orderBook) {
+        setOrderBook(data.orderBook);
+        // Price update karo
+        if (data.orderBook.bids.length > 0) {
+          setPrice(data.orderBook.bids[0].price);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching order book:", error);
+    }
+  };
+
+  // ===== FETCH TRADES =====
+  const fetchTrades = async () => {
+    try {
+      const res = await fetch("/api/trades?limit=20");
+      const data = await res.json();
+      if (data.trades) {
+        setTrades(data.trades);
+      }
+    } catch (error) {
+      console.error("Error fetching trades:", error);
+    }
+  };
+
+  // ===== PLACE ORDER =====
+  const placeOrder = async (side: "buy" | "sell", price: number, amount: number) => {
+    try {
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side, price, amount }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh data after order
+        fetchOrderBook();
+        fetchTrades();
+        fetchChartData(activeTimeframe);
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+    }
+  };
+
+  // ===== INITIAL DATA LOAD =====
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchChartData(activeTimeframe),
+        fetchOrderBook(),
+        fetchTrades(),
+      ]);
+      setLoading(false);
+    };
+    loadData();
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(() => {
+      fetchOrderBook();
+      fetchTrades();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [pair]);
+
+  // ===== TIMEFRAME CHANGE =====
+  useEffect(() => {
+    fetchChartData(activeTimeframe);
+  }, [activeTimeframe]);
+
+  // Order Book data display
+  const bids = orderBook.bids || [];
+  const asks = orderBook.asks || [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
@@ -55,48 +133,45 @@ export default function MexcStyleTradePage() {
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-xl font-bold text-white">M</div>
-            <span className="font-bold text-2xl text-white">MEXC</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded flex items-center justify-center text-xl font-bold text-white">C</div>
+            <span className="font-bold text-2xl text-white">CashiPro</span>
           </Link>
-          <nav className="hidden lg:flex items-center gap-4 text-sm text-gray-300">
-            <span className="hover:text-white cursor-pointer">Buy Crypto</span>
-            <span className="hover:text-white cursor-pointer">Markets</span>
-            <span className="text-blue-400 cursor-pointer">Spot</span>
-            <span className="hover:text-white cursor-pointer">Futures</span>
-            <span className="hover:text-white cursor-pointer">Earn</span>
-            <span className="hover:text-white cursor-pointer">Event Center</span>
-            <span className="hover:text-white cursor-pointer">Rewards Hub</span>
-            <span className="hover:text-white cursor-pointer">More</span>
+          <nav className="hidden md:flex items-center gap-4 text-sm text-gray-300">
+            <Link href="/markets" className="hover:text-white">Markets</Link>
+            <Link href="/trade/BTCUSDT" className="text-blue-400">Spot</Link>
+            <Link href="/futures" className="hover:text-white">Futures</Link>
+            <Link href="/earn" className="hover:text-white">Earn</Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex bg-gray-900 px-3 py-1.5 rounded-full text-sm text-gray-400">🔍 ONDO</div>
-          <span className="text-sm text-gray-300 hidden md:block">Wallets</span>
-          <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-600 text-sm">👤</div>
-          <button className="lg:hidden text-2xl text-white">☰</button>
+          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">Log In</Link>
+          <Link href="/register">
+            <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-full text-sm font-medium">Sign Up</button>
+          </Link>
+          <button className="md:hidden text-2xl text-white">☰</button>
         </div>
       </div>
 
       {/* ===== PAIR HEADER ===== */}
-      <div className="bg-[#111111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
+      <div className="bg-[#111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white">
             {displaySymbol.slice(0, 2)}
           </div>
           <div>
             <div className="text-2xl font-bold text-white">{pair}</div>
-            <div className="text-xs text-gray-500">{displaySymbol} Token</div>
+            <div className="text-xs text-gray-500">{displaySymbol} / USDT</div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-6 md:gap-10">
           <div>
-            <span className="text-3xl font-mono font-bold text-white">{currentPrice.toFixed(4)}</span>
+            <span className="text-3xl font-mono font-bold text-white">{price.toLocaleString()}</span>
             <span className="text-green-400 ml-2 text-lg">+{priceChange}%</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-1 text-sm">
-            <div><span className="text-gray-500">24H High</span> <span className="text-white">1.6700</span></div>
-            <div><span className="text-gray-500">24H Low</span> <span className="text-white">1.6537</span></div>
-            <div><span className="text-gray-500">24H Vol</span> <span className="text-white">1.15M</span></div>
+            <div><span className="text-gray-500">24H High</span> <span className="text-white">66,200</span></div>
+            <div><span className="text-gray-500">24H Low</span> <span className="text-white">64,100</span></div>
+            <div><span className="text-gray-500">24H Vol</span> <span className="text-white">1.2B</span></div>
             <div><span className="text-gray-500">24H Amount</span> <span className="text-white">1.91M</span></div>
           </div>
         </div>
@@ -114,7 +189,7 @@ export default function MexcStyleTradePage() {
               <span className="text-gray-400">Compare</span>
             </div>
 
-            {/* Timeframes with Dropdown Arrow */}
+            {/* Timeframes */}
             <div className="flex items-center gap-1 text-xs relative">
               {visibleTimeframes.map((tf) => (
                 <button
@@ -156,33 +231,40 @@ export default function MexcStyleTradePage() {
             </div>
           </div>
 
-          <div className="flex-1 bg-[#0F1217] relative flex items-center justify-center min-h-[250px]">
-            <div className="text-center">
-              <div className="text-5xl mb-3 opacity-20">📈</div>
-              <p className="text-gray-500 text-base">{pair} {activeTimeframe} Chart</p>
-              <p className="text-xs text-gray-600 mt-1">MA5 • MA10 • MA20 • Volume</p>
-            </div>
-            <div className="absolute bottom-8 left-8 right-8 h-[150px] border border-gray-700/50 rounded">
-              <div className="absolute bottom-16 left-[20%] w-5 h-24 bg-green-500/40"></div>
-              <div className="absolute bottom-20 left-[35%] w-5 h-16 bg-red-500/40"></div>
-              <div className="absolute bottom-12 left-[50%] w-5 h-32 bg-green-500/40"></div>
-              <div className="absolute bottom-22 left-[65%] w-5 h-14 bg-red-500/40"></div>
-              <div className="absolute bottom-8 left-[80%] w-5 h-36 bg-green-500/40"></div>
-            </div>
+          {/* Chart with Real Data */}
+          <div className="flex-1 bg-[#0F1217] p-4 min-h-[250px]">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-500 text-sm mt-2">Loading chart...</p>
+                </div>
+              </div>
+            ) : chartData.length > 0 ? (
+              <Chart data={chartData} />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="text-5xl mb-3 opacity-20">📈</div>
+                  <p className="text-gray-500">No chart data available</p>
+                  <p className="text-xs text-gray-600 mt-1">Place a trade to see data</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
-            <div>VOL(MX) <span className="text-white">108.91</span></div>
+            <div>VOL <span className="text-white">108.91</span></div>
             <div>VOL(USDT) <span className="text-white">181.51K</span></div>
-            <div>MA5 <span className="text-yellow-400">6.696K</span></div>
-            <div>MA10 <span className="text-purple-400">10.119K</span></div>
-            <div>MA20 <span className="text-blue-400">10.318K</span></div>
+            <div>MA5 <span className="text-yellow-400">65,200</span></div>
+            <div>MA10 <span className="text-purple-400">65,100</span></div>
+            <div>MA20 <span className="text-blue-400">65,000</span></div>
           </div>
         </div>
 
-        {/* RIGHT: Order Book (Chota) + Spot Section (Bara) */}
+        {/* RIGHT: Order Book + Spot Section */}
         <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
-          {/* Order Book - Chota */}
+          {/* Order Book */}
           <div className="w-[120px] flex flex-col border-r border-gray-700">
             <div className="flex border-b border-gray-700 px-2 py-1.5">
               <span className="text-blue-400 border-b-2 border-blue-400 pb-1 text-[10px] font-medium">Order Book</span>
@@ -192,25 +274,25 @@ export default function MexcStyleTradePage() {
                 <div>Price</div>
                 <div className="text-right">Amt</div>
               </div>
-              {orderBookAsks.slice(0, 6).map((item, i) => (
+              {asks.slice(0, 6).map((ask: any, i: number) => (
                 <div key={`ask-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-red-500/10 text-red-400">
-                  <div>{item.price}</div>
-                  <div className="text-right text-gray-300">{item.amount}</div>
+                  <div>{ask.price}</div>
+                  <div className="text-right text-gray-300">{ask.amount}</div>
                 </div>
               ))}
               <div className="bg-[#1C1C1C] py-1 text-center border-y border-gray-700 my-0.5">
-                <div className="text-xs font-bold text-white">{currentPrice.toFixed(4)}</div>
+                <div className="text-xs font-bold text-white">{price.toLocaleString()}</div>
               </div>
-              {orderBookBids.slice(0, 6).map((item, i) => (
+              {bids.slice(0, 6).map((bid: any, i: number) => (
                 <div key={`bid-${i}`} className="grid grid-cols-2 text-[10px] py-0.5 hover:bg-green-500/10 text-green-400">
-                  <div>{item.price}</div>
-                  <div className="text-right text-gray-300">{item.amount}</div>
+                  <div>{bid.price}</div>
+                  <div className="text-right text-gray-300">{bid.amount}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* SPOT SECTION - Bara (MEXC Style) */}
+          {/* SPOT SECTION */}
           <div className="flex-1 flex flex-col bg-[#111] p-3">
             {/* Buy/Sell */}
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
@@ -232,34 +314,32 @@ export default function MexcStyleTradePage() {
               </button>
             </div>
 
-            {/* Limit / Market / TP-SL */}
+            {/* Order Type Tabs */}
             <div className="flex items-center gap-1 mb-2 text-xs">
               <button
-                onClick={() => setOrderMode("limit")}
+                onClick={() => setOrderType("limit")}
                 className={`px-3 py-1 rounded transition ${
-                  orderMode === "limit" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                  orderType === "limit" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                 }`}
               >
                 Limit
               </button>
               <button
-                onClick={() => setOrderMode("market")}
+                onClick={() => setOrderType("market")}
                 className={`px-3 py-1 rounded transition ${
-                  orderMode === "market" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                  orderType === "market" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                 }`}
               >
                 Market
               </button>
               <button
-                onClick={() => setOrderMode("tpSl")}
+                onClick={() => setOrderType("tpSl")}
                 className={`px-3 py-1 rounded transition ${
-                  orderMode === "tpSl" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
+                  orderType === "tpSl" ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                 }`}
               >
                 TP/SL
               </button>
-
-              {/* TP/SL Toggle */}
               <div className="ml-auto flex items-center gap-2">
                 <span className="text-[10px] text-gray-500">TP/SL</span>
                 <button
@@ -268,11 +348,9 @@ export default function MexcStyleTradePage() {
                     showTPSL ? "bg-blue-500" : "bg-gray-700"
                   }`}
                 >
-                  <div
-                    className={`w-3 h-3 bg-white rounded-full transition transform ${
-                      showTPSL ? "translate-x-4" : "translate-x-0.5"
-                    }`}
-                  />
+                  <div className={`w-3 h-3 bg-white rounded-full transition transform ${
+                    showTPSL ? "translate-x-4" : "translate-x-0.5"
+                  }`} />
                 </button>
               </div>
             </div>
@@ -281,18 +359,18 @@ export default function MexcStyleTradePage() {
             <div className="mb-1.5">
               <div className="flex justify-between text-[10px] text-gray-500">
                 <span>Price (USDT)</span>
-                <span>Available <span className="text-white">0.0142 USDT</span> ▼</span>
+                <span>Available <span className="text-white">0.0142 USDT</span></span>
               </div>
               <input
                 type="text"
-                defaultValue={currentPrice.toFixed(4)}
+                defaultValue={price.toLocaleString()}
                 className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
               />
             </div>
 
             {/* Amount */}
             <div className="mb-1.5">
-              <div className="text-[10px] text-gray-500">Amount (MX)</div>
+              <div className="text-[10px] text-gray-500">Amount</div>
               <input
                 type="text"
                 placeholder="0"
@@ -300,7 +378,7 @@ export default function MexcStyleTradePage() {
               />
             </div>
 
-            {/* Quick % buttons */}
+            {/* Quick % */}
             <div className="flex gap-1 text-xs">
               {[0, 25, 50, 75, 100].map((p) => (
                 <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
@@ -312,14 +390,14 @@ export default function MexcStyleTradePage() {
             {/* Total */}
             <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
 
-            {/* TP/SL Boxes (Toggle) */}
+            {/* TP/SL Boxes */}
             {showTPSL && (
               <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
                 <div>
                   <div className="text-[10px] text-gray-500">TP trigger price (USDT)</div>
                   <input
                     type="text"
-                    placeholder="1.7000"
+                    placeholder="66,000"
                     className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -327,15 +405,26 @@ export default function MexcStyleTradePage() {
                   <div className="text-[10px] text-gray-500">SL trigger price (USDT)</div>
                   <input
                     type="text"
-                    placeholder="1.6300"
+                    placeholder="64,500"
                     className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
             )}
 
-            {/* Buy Button */}
+            {/* Trade Button */}
             <button
+              onClick={() => {
+                const priceInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+                const amountInput = document.querySelectorAll('input[type="text"]')[1] as HTMLInputElement;
+                const p = parseFloat(priceInput?.value.replace(/,/g, "") || "0");
+                const a = parseFloat(amountInput?.value || "0");
+                if (p > 0 && a > 0) {
+                  placeOrder(side, p, a);
+                } else {
+                  alert("Please enter valid price and amount");
+                }
+              }}
               className={`w-full mt-2 py-3 rounded-xl text-base font-bold transition ${
                 side === "buy"
                   ? "bg-green-500 hover:bg-green-600 text-black"
@@ -345,9 +434,8 @@ export default function MexcStyleTradePage() {
               {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
             </button>
 
-            {/* Highest Bid */}
             <div className="text-[10px] text-gray-500 text-center mt-1">
-              Highest Bid <span className="text-green-400">1.7507 USDT</span>
+              Highest Bid <span className="text-green-400">65,400 USDT</span>
             </div>
           </div>
         </div>
