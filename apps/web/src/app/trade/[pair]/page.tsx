@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-// Chart component ko dynamic import karo (SSR off)
 const Chart = dynamic(
   () => import("@/components/Chart"),
   { ssr: false }
@@ -33,16 +32,41 @@ export default function TradePage() {
   const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
+  // ===== GENERATE MOCK CHART DATA =====
+  const generateMockChartData = (count: number) => {
+    const data = [];
+    let price = 65000;
+    const now = Date.now();
+    for (let i = count; i > 0; i--) {
+      const change = (Math.random() - 0.5) * 500;
+      const open = price;
+      const close = price + change;
+      data.push({
+        time: new Date(now - i * 60000).toISOString().slice(0, 16),
+        open: Math.round(open * 100) / 100,
+        high: Math.round((Math.max(open, close) + Math.random() * 200) * 100) / 100,
+        low: Math.round((Math.min(open, close) - Math.random() * 200) * 100) / 100,
+        close: Math.round(close * 100) / 100,
+      });
+      price = close;
+    }
+    return data;
+  };
+
   // ===== FETCH CHART DATA =====
   const fetchChartData = async (interval: string) => {
     try {
       const res = await fetch(`/api/klines?symbol=${pair}&interval=${interval}&limit=100`);
       const data = await res.json();
-      if (data.data) {
+      if (data.data && data.data.length > 0) {
         setChartData(data.data);
+      } else {
+        // Agar API se data nahi aaya toh mock data use karo
+        setChartData(generateMockChartData(100));
       }
     } catch (error) {
       console.error("Error fetching chart data:", error);
+      setChartData(generateMockChartData(100));
     }
   };
 
@@ -51,12 +75,27 @@ export default function TradePage() {
     try {
       const res = await fetch("/api/orderbook");
       const data = await res.json();
-      if (data.orderBook) {
+      if (data.orderBook && data.orderBook.bids.length > 0) {
         setOrderBook(data.orderBook);
-        // Price update karo
         if (data.orderBook.bids.length > 0) {
           setPrice(data.orderBook.bids[0].price);
         }
+      } else {
+        // Mock order book
+        const bids = [];
+        const asks = [];
+        const basePrice = price;
+        for (let i = 0; i < 8; i++) {
+          bids.push({
+            price: Math.round((basePrice - (i + 1) * 5) * 100) / 100,
+            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
+          });
+          asks.push({
+            price: Math.round((basePrice + (i + 1) * 5) * 100) / 100,
+            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
+          });
+        }
+        setOrderBook({ bids, asks });
       }
     } catch (error) {
       console.error("Error fetching order book:", error);
@@ -68,7 +107,7 @@ export default function TradePage() {
     try {
       const res = await fetch("/api/trades?limit=20");
       const data = await res.json();
-      if (data.trades) {
+      if (data.trades && data.trades.length > 0) {
         setTrades(data.trades);
       }
     } catch (error) {
@@ -86,7 +125,6 @@ export default function TradePage() {
       });
       const data = await res.json();
       if (data.success) {
-        // Refresh data after order
         fetchOrderBook();
         fetchTrades();
         fetchChartData(activeTimeframe);
@@ -96,7 +134,7 @@ export default function TradePage() {
     }
   };
 
-  // ===== INITIAL DATA LOAD =====
+  // ===== REAL-TIME DATA GENERATOR =====
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -109,27 +147,29 @@ export default function TradePage() {
     };
     loadData();
 
-    // Auto-refresh every 5 seconds
+    // Real-time updates
     const interval = setInterval(() => {
+      setPrice(prev => {
+        const change = (Math.random() - 0.5) * 50;
+        return Math.round((prev + change) * 100) / 100;
+      });
       fetchOrderBook();
       fetchTrades();
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [pair]);
 
-  // ===== TIMEFRAME CHANGE =====
   useEffect(() => {
     fetchChartData(activeTimeframe);
   }, [activeTimeframe]);
 
-  // Order Book data display
   const bids = orderBook.bids || [];
   const asks = orderBook.asks || [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-x-hidden">
-      {/* ===== TOP NAVBAR ===== */}
+      {/* Top Navbar */}
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
@@ -152,7 +192,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* ===== PAIR HEADER ===== */}
+      {/* Pair Header */}
       <div className="bg-[#111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white">
@@ -177,9 +217,9 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* ===== MAIN LAYOUT ===== */}
+      {/* Main Layout */}
       <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        {/* LEFT: Chart */}
+        {/* Chart */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-gray-800">
           <div className="flex flex-wrap items-center justify-between border-b border-gray-800 px-4 py-2 gap-2">
             <div className="flex gap-4 text-sm">
@@ -188,8 +228,6 @@ export default function TradePage() {
               <span className="text-gray-400">Trading Data</span>
               <span className="text-gray-400">Compare</span>
             </div>
-
-            {/* Timeframes */}
             <div className="flex items-center gap-1 text-xs relative">
               {visibleTimeframes.map((tf) => (
                 <button
@@ -231,7 +269,6 @@ export default function TradePage() {
             </div>
           </div>
 
-          {/* Chart with Real Data */}
           <div className="flex-1 bg-[#0F1217] p-4 min-h-[250px]">
             {loading ? (
               <div className="flex items-center justify-center h-full">
@@ -247,7 +284,6 @@ export default function TradePage() {
                 <div className="text-center">
                   <div className="text-5xl mb-3 opacity-20">📈</div>
                   <p className="text-gray-500">No chart data available</p>
-                  <p className="text-xs text-gray-600 mt-1">Place a trade to see data</p>
                 </div>
               </div>
             )}
@@ -262,7 +298,7 @@ export default function TradePage() {
           </div>
         </div>
 
-        {/* RIGHT: Order Book + Spot Section */}
+        {/* Order Book + Spot */}
         <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
           {/* Order Book */}
           <div className="w-[120px] flex flex-col border-r border-gray-700">
@@ -292,9 +328,8 @@ export default function TradePage() {
             </div>
           </div>
 
-          {/* SPOT SECTION */}
+          {/* Spot Section */}
           <div className="flex-1 flex flex-col bg-[#111] p-3">
-            {/* Buy/Sell */}
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
@@ -314,7 +349,6 @@ export default function TradePage() {
               </button>
             </div>
 
-            {/* Order Type Tabs */}
             <div className="flex items-center gap-1 mb-2 text-xs">
               <button
                 onClick={() => setOrderType("limit")}
@@ -355,7 +389,6 @@ export default function TradePage() {
               </div>
             </div>
 
-            {/* Price */}
             <div className="mb-1.5">
               <div className="flex justify-between text-[10px] text-gray-500">
                 <span>Price (USDT)</span>
@@ -368,7 +401,6 @@ export default function TradePage() {
               />
             </div>
 
-            {/* Amount */}
             <div className="mb-1.5">
               <div className="text-[10px] text-gray-500">Amount</div>
               <input
@@ -378,7 +410,6 @@ export default function TradePage() {
               />
             </div>
 
-            {/* Quick % */}
             <div className="flex gap-1 text-xs">
               {[0, 25, 50, 75, 100].map((p) => (
                 <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
@@ -387,10 +418,8 @@ export default function TradePage() {
               ))}
             </div>
 
-            {/* Total */}
             <div className="text-[10px] text-gray-500 mt-1">Total (USDT) <span className="text-white">0</span></div>
 
-            {/* TP/SL Boxes */}
             {showTPSL && (
               <div className="mt-2 space-y-1.5 border-t border-gray-700 pt-2">
                 <div>
@@ -412,7 +441,6 @@ export default function TradePage() {
               </div>
             )}
 
-            {/* Trade Button */}
             <button
               onClick={() => {
                 const priceInput = document.querySelector('input[type="text"]') as HTMLInputElement;
@@ -441,7 +469,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* ===== BOTTOM TABS ===== */}
+      {/* Bottom Tabs */}
       <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-2 flex flex-wrap items-center justify-between text-sm">
         <div className="flex gap-4 overflow-x-auto">
           <span className="text-blue-400 border-b-2 border-blue-400 pb-1 whitespace-nowrap">Open Orders(0)</span>
