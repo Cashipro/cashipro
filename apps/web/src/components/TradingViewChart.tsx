@@ -6,14 +6,12 @@ interface TradingViewChartProps {
   symbol?: string;
   theme?: "dark" | "light";
   height?: number;
-  interval?: string;
 }
 
 export default function TradingViewChart({
   symbol = "BINANCE:BTCUSDT",
   theme = "dark",
   height = 450,
-  interval = "15",
 }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
@@ -37,18 +35,16 @@ export default function TradingViewChart({
       const widgetId = `tradingview_${Date.now()}`;
       containerRef.current.id = widgetId;
 
-      // ✅ FIX: Chart only mode — No extra text, no timeframe
       widgetRef.current = new window.TradingView.MediumWidget({
         symbols: [[symbol.split(":")[1] || "BTCUSDT", `${symbol}|1D`]],
-        chartOnly: true, // ✅ SIRF CHART — koi extra text nahi
+        chartOnly: true,
         width: "100%",
         height: height,
         locale: "en",
         colorTheme: theme,
         autosize: true,
         showVolume: false,
-        hide_top_toolbar: true, // ✅ Top toolbar hide
-        hide_side_toolbar: true, // ✅ Side toolbar hide
+        hide_top_toolbar: true,
         container_id: widgetId,
       });
     };
@@ -61,7 +57,7 @@ export default function TradingViewChart({
         widgetRef.current = null;
       }
     };
-  }, [symbol, theme, height, interval]);
+  }, [symbol, theme, height]);
 
   return <div ref={containerRef} className="w-full h-full min-h-[300px]" style={{ height: `${height}px` }} />;
 }
