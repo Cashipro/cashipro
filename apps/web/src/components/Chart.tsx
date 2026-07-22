@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, ColorType } from "lightweight-charts";
+import { createChart, ColorType } from "lightweight-charts";
 
 interface ChartProps {
   data: { time: string; open: number; high: number; low: number; close: number }[];
@@ -36,15 +36,30 @@ export default function Chart({ data }: ChartProps) {
       },
     });
 
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#10B981",
-      downColor: "#EF4444",
-      wickUpColor: "#10B981",
-      wickDownColor: "#EF4444",
-      borderVisible: false,
-    });
+    // Sahi tarika — Series type specify karo
+    const series = chart.addSeries(
+      { 
+        upColor: "#10B981",
+        downColor: "#EF4444",
+        wickUpColor: "#10B981",
+        wickDownColor: "#EF4444",
+        borderVisible: false,
+      } as any,
+      { 
+        // Custom options
+      }
+    );
 
-    series.setData(data);
+    // Data ko format karo
+    const formattedData = data.map((item) => ({
+      time: item.time,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      close: item.close,
+    }));
+
+    series.setData(formattedData);
     chart.timeScale().fitContent();
 
     return () => {
