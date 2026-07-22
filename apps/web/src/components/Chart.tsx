@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, CandlestickSeries, ColorType } from "lightweight-charts";
+import { createChart, ColorType } from "lightweight-charts";
 
 interface ChartProps {
   data: { time: string; open: number; high: number; low: number; close: number }[];
@@ -36,8 +36,8 @@ export default function Chart({ data }: ChartProps) {
       },
     });
 
-    // ✅ SAHI TAREEQA — CandlestickSeries
-    const series = chart.addSeries(CandlestickSeries, {
+    // ✅ Sahi tarika — addCandlestickSeries use karo
+    const series = chart.addCandlestickSeries({
       upColor: "#26a69a",
       downColor: "#ef5350",
       wickUpColor: "#26a69a",
