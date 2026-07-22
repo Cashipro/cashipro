@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -9,6 +9,13 @@ const TradingViewChart = dynamic(
   () => import("@/components/TradingViewChart"),
   { ssr: false }
 );
+
+// ===== COINS LIST =====
+const COINS = [
+  "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
+  "ADAUSDT", "DOGEUSDT", "DOTUSDT", "MATICUSDT", "LINKUSDT",
+  "AVAXUSDT", "UNIUSDT", "ATOMUSDT", "ETCUSDT", "FILUSDT",
+];
 
 // ===== TYPE DEFINITIONS =====
 interface Order {
@@ -26,29 +33,22 @@ export default function TradePage() {
   const [showTPSL, setShowTPSL] = useState(false);
   const [activeTimeframe, setActiveTimeframe] = useState("15m");
   const [showTimeframes, setShowTimeframes] = useState(false);
+  const [showCoinSearch, setShowCoinSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
   const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
+  const [selectedCoin, setSelectedCoin] = useState(pair);
 
-  const timeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
-  const visibleTimeframes = ["1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // ===== TIMEFRAME TO INTERVAL CONVERTER =====
-  const getInterval = (tf: string): string => {
-    const map: Record<string, string> = {
-      "1m": "1",
-      "5m": "5",
-      "15m": "15",
-      "30m": "30",
-      "1H": "60",
-      "4H": "240",
-      "1D": "1D",
-      "1W": "1W",
-      "1M": "1M",
-    };
-    return map[tf] || "15";
-  };
+  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
+  const visibleTimeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+
+  const filteredCoins = COINS.filter(c => 
+    c.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // ===== FETCH ORDER BOOK =====
   const fetchOrderBook = async () => {
@@ -111,6 +111,24 @@ export default function TradePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // ===== CLOSE SEARCH ON OUTSIDE CLICK =====
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowCoinSearch(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCoinSelect = (coin: string) => {
+    setSelectedCoin(coin);
+    setShowCoinSearch(false);
+    setSearchQuery("");
+    window.location.href = `/trade/${coin}`;
+  };
+
   const bids = orderBook.bids || [];
   const asks = orderBook.asks || [];
 
@@ -139,17 +157,56 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* ===== PAIR HEADER ===== */}
+      {/* ===== PAIR HEADER WITH SEARCH ===== */}
       <div className="bg-[#111] border-b border-gray-700 px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 md:gap-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white">
+        <div className="flex items-center gap-3 relative" ref={searchRef}>
+          <div 
+            className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white cursor-pointer"
+            onClick={() => setShowCoinSearch(!showCoinSearch)}
+          >
             {displaySymbol.slice(0, 2)}
           </div>
           <div>
-            <div className="text-2xl font-bold text-white">{pair}</div>
+            <div 
+              className="text-2xl font-bold text-white cursor-pointer flex items-center gap-2"
+              onClick={() => setShowCoinSearch(!showCoinSearch)}
+            >
+              {pair}
+              <span className="text-xs text-gray-400">▼</span>
+            </div>
             <div className="text-xs text-gray-500">{displaySymbol} / USDT</div>
           </div>
+
+          {/* Coin Search Dropdown */}
+          {showCoinSearch && (
+            <div className="absolute top-full left-0 mt-2 bg-[#1A1A1A] border border-gray-700 rounded-xl p-3 z-50 min-w-[200px]">
+              <input
+                type="text"
+                placeholder="Search coin..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                autoFocus
+              />
+              <div className="mt-2 max-h-[200px] overflow-y-auto">
+                {filteredCoins.length > 0 ? (
+                  filteredCoins.map((coin) => (
+                    <button
+                      key={coin}
+                      onClick={() => handleCoinSelect(coin)}
+                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition"
+                    >
+                      {coin}
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 px-3 py-2">No coins found</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
         <div className="flex flex-wrap items-center gap-6 md:gap-10">
           <div>
             <span className="text-3xl font-mono font-bold text-white">{price.toLocaleString()}</span>
@@ -218,13 +275,12 @@ export default function TradePage() {
             </div>
           </div>
 
-          {/* TradingView Chart */}
+          {/* TradingView Chart - CHART ONLY */}
           <div className="flex-1 bg-[#0F1217] p-2 min-h-[250px]">
             <TradingViewChart 
               symbol={`BINANCE:${pair}`} 
               theme="dark" 
               height={450} 
-              interval={getInterval(activeTimeframe)}
             />
           </div>
 
