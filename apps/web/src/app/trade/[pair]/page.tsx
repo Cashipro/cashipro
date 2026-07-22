@@ -151,36 +151,36 @@ export default function MexcStyleTradePage() {
           </div>
         </div>
 
-        {/* RIGHT: Order Book + Spot Section — SIDE BY SIDE */}
-        <div className="w-full lg:w-[420px] xl:w-[460px] flex flex-row bg-[#0A0A0A]">
-          {/* Order Book - Left Side */}
-          <div className="flex-1 flex flex-col border-r border-gray-700 min-w-[180px]">
-            <div className="flex border-b border-gray-700 px-3 py-2">
-              <span className="text-blue-400 border-b-2 border-blue-400 pb-2 text-xs font-medium">Order Book</span>
-              <span className="text-gray-400 ml-4 text-xs">Market Trades</span>
+        {/* RIGHT: Order Book (Chota) + Spot Section (Bara) — SIDE BY SIDE */}
+        <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-row bg-[#0A0A0A]">
+          {/* Order Book - Chota (Left) */}
+          <div className="w-[140px] flex flex-col border-r border-gray-700">
+            <div className="flex border-b border-gray-700 px-2 py-1.5">
+              <span className="text-blue-400 border-b-2 border-blue-400 pb-1 text-[10px] font-medium">Order Book</span>
+              <span className="text-gray-400 ml-2 text-[10px]">Market</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-2">
-              <div className="grid grid-cols-3 text-[10px] text-gray-500 mb-1">
+            <div className="flex-1 overflow-y-auto px-1.5">
+              <div className="grid grid-cols-3 text-[8px] text-gray-500 mb-0.5">
                 <div>Price</div>
-                <div className="text-right">Amount</div>
+                <div className="text-right">Amt</div>
                 <div className="text-right">Total</div>
               </div>
-              {orderBookAsks.slice(0, 6).map((item, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-3 text-xs py-0.5 hover:bg-red-500/10 text-red-400">
+              {orderBookAsks.slice(0, 8).map((item, i) => (
+                <div key={`ask-${i}`} className="grid grid-cols-3 text-[10px] py-0.5 hover:bg-red-500/10 text-red-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
                 </div>
               ))}
 
-              <div className="bg-[#1C1C1C] py-2 text-center border-y border-gray-700 my-1">
-                <div className="text-sm font-bold text-white">{currentPrice.toFixed(4)}</div>
-                <div className="text-green-400 text-[10px]">↑ $1.66</div>
+              <div className="bg-[#1C1C1C] py-1.5 text-center border-y border-gray-700 my-0.5">
+                <div className="text-xs font-bold text-white">{currentPrice.toFixed(4)}</div>
+                <div className="text-green-400 text-[8px]">↑ $1.66</div>
               </div>
 
-              {orderBookBids.slice(0, 6).map((item, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-3 text-xs py-0.5 hover:bg-green-500/10 text-green-400">
+              {orderBookBids.slice(0, 8).map((item, i) => (
+                <div key={`bid-${i}`} className="grid grid-cols-3 text-[10px] py-0.5 hover:bg-green-500/10 text-green-400">
                   <div>{item.price}</div>
                   <div className="text-right text-gray-300">{item.amount}</div>
                   <div className="text-right text-gray-300">{item.total}</div>
@@ -189,12 +189,12 @@ export default function MexcStyleTradePage() {
             </div>
           </div>
 
-          {/* SPOT SECTION - Right Side */}
-          <div className="w-[180px] flex flex-col bg-[#111] p-3">
+          {/* SPOT SECTION - Bara (Right) */}
+          <div className="flex-1 flex flex-col bg-[#111] p-3">
             <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-2">
               <button
                 onClick={() => setSide("buy")}
-                className={`flex-1 py-1.5 text-xs font-bold transition ${
+                className={`flex-1 py-2 text-sm font-bold transition ${
                   side === "buy" ? "bg-green-500 text-black" : "text-gray-400"
                 }`}
               >
@@ -202,7 +202,7 @@ export default function MexcStyleTradePage() {
               </button>
               <button
                 onClick={() => setSide("sell")}
-                className={`flex-1 py-1.5 text-xs font-bold transition ${
+                className={`flex-1 py-2 text-sm font-bold transition ${
                   side === "sell" ? "bg-red-500 text-white" : "text-gray-400"
                 }`}
               >
@@ -210,46 +210,57 @@ export default function MexcStyleTradePage() {
               </button>
             </div>
 
-            <div className="flex gap-1 mb-2 text-[10px]">
+            <div className="flex gap-1 mb-2 text-xs">
               {["limit", "market", "tpSl"].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setOrderMode(mode as any)}
-                  className={`flex-1 py-0.5 rounded text-[10px] transition ${
+                  className={`flex-1 py-1 rounded text-xs transition ${
                     orderMode === mode ? "bg-gray-700 text-white" : "text-gray-400 hover:bg-gray-800"
                   }`}
                 >
-                  {mode === "tpSl" ? "TP/SL" : mode.slice(0, 3)}
+                  {mode === "tpSl" ? "TP/SL" : mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </button>
               ))}
             </div>
 
-            <div className="mb-1">
-              <div className="text-[8px] text-gray-500">Price</div>
-              <input type="text" defaultValue={currentPrice.toFixed(4)} className="w-full bg-gray-900 border border-gray-700 rounded px-1 py-1 text-xs text-white" />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <div className="text-[10px] text-gray-500">Price</div>
+                <input
+                  type="text"
+                  defaultValue={currentPrice.toFixed(4)}
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="text-[10px] text-gray-500">Amount</div>
+                <input
+                  type="text"
+                  placeholder="0"
+                  className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            <div className="mb-1">
-              <div className="text-[8px] text-gray-500">Amount</div>
-              <input type="text" placeholder="0" className="w-full bg-gray-900 border border-gray-700 rounded px-1 py-1 text-xs text-white" />
-            </div>
-
-            <div className="flex gap-1 mt-1 text-[8px]">
+            <div className="flex gap-1 mt-1 text-xs">
               {[25, 50, 75, 100].map((p) => (
-                <button key={p} className="flex-1 py-0.5 bg-gray-800 rounded hover:bg-gray-700">{p}%</button>
+                <button key={p} className="flex-1 py-1 bg-gray-800 rounded hover:bg-gray-700 text-xs">
+                  {p}%
+                </button>
               ))}
             </div>
 
-            <div className="text-[8px] text-gray-500 mt-1">Available 0.0142</div>
+            <div className="text-xs text-gray-500 mt-1">Available 0.0142 USDT</div>
 
             <button
-              className={`w-full mt-1 py-2 rounded-lg text-xs font-bold transition ${
+              className={`w-full mt-2 py-3 rounded-xl text-base font-bold transition ${
                 side === "buy"
                   ? "bg-green-500 hover:bg-green-600 text-black"
                   : "bg-red-500 hover:bg-red-600 text-white"
               }`}
             >
-              {side === "buy" ? `Buy` : `Sell`}
+              {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
             </button>
           </div>
         </div>
