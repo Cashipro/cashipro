@@ -4,40 +4,32 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-// ===== COINGECKO API CONFIG =====
-const COINGECKO_API = "https://api.coingecko.com/api/v3";
-const TOP_COINS_COUNT = 1000; // 🔥 1000 coins
-const COINS_PER_PAGE = 250;
+// ===== COINS LIST — BINANCE SE (FREE, NO API KEY) =====
+const POPULAR_COINS = [
+  "BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "DOGE", "DOT", 
+  "MATIC", "LINK", "AVAX", "UNI", "ATOM", "ETC", "FIL", 
+  "LTC", "BCH", "NEAR", "APT", "ARB", "OP", "SUI", "SEI",
+  "INJ", "RUNE", "AAVE", "MKR", "CRV", "GRT", "SAND", "MANA",
+  "CHZ", "GALA", "AXS", "FLOW", "THETA", "VET", "ICP", "EGLD",
+  "KAVA", "ZIL", "QTUM", "ONT", "XLM", "XTZ", "ALGO", "HBAR",
+];
 
-// ===== FETCH 1000+ COINS FROM COINGECKO =====
-const fetchTopCoins = async (page: number) => {
-  const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${COINS_PER_PAGE}&page=${page}&sparkline=false&price_change_percentage=1h,24h,7d`;
-  const res = await fetch(url);
-  return res.json();
-};
-
-// ===== FETCH ALL COINS LIST (IDs) =====
-const fetchCoinList = async () => {
-  const res = await fetch(`${COINGECKO_API}/coins/list`);
-  const data = await res.json();
-  return data.map((coin: any) => coin.id);
-};
-
-// ===== FETCH SINGLE COIN DATA =====
-const fetchCoinData = async (coinId: string) => {
-  const res = await fetch(`${COINGECKO_API}/coins/${coinId}?localization=false&tickers=false&market_data=true`);
-  const data = await res.json();
-  return data;
-};
-
-// ===== FETCH HISTORICAL CHART DATA =====
-const fetchChartData = async (coinId: string, days: number = 30) => {
-  const res = await fetch(`${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
-  const data = await res.json();
-  return data.prices.map((p: [number, number]) => ({
-    time: new Date(p[0]).toISOString().slice(0, 16),
-    price: p[1],
-  }));
+// ===== BINANCE API ENDPOINTS =====
+const fetchPrice = async (symbol: string) => {
+  try {
+    const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
+    const data = await res.json();
+    return {
+      price: parseFloat(data.lastPrice),
+      change: parseFloat(data.priceChangePercent),
+      high: parseFloat(data.highPrice),
+      low: parseFloat(data.lowPrice),
+      volume: parseFloat(data.volume),
+    };
+  } catch (error) {
+    console.error("Error fetching price:", error);
+    return null;
+  }
 };
 
 // ===== CMC CHART =====
@@ -74,18 +66,6 @@ function CMCChart({ symbol }: { symbol: string }) {
 }
 
 // ===== TYPE DEFINITIONS =====
-interface CoinData {
-  id: string;
-  symbol: string;
-  name: string;
-  current_price: number;
-  price_change_percentage_24h: number;
-  high_24h: number;
-  low_24h: number;
-  total_volume: number;
-  market_cap: number;
-}
-
 interface Order {
   price: number;
   amount: number;
@@ -94,7 +74,7 @@ interface Order {
 export default function TradePage() {
   const params = useParams();
   const pair = (params.pair as string) || "BTCUSDT";
-  const displaySymbol = pair.replace("USDT", "").toLowerCase();
+  const displaySymbol = pair.replace("USDT", "");
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
@@ -109,8 +89,6 @@ export default function TradePage() {
   const [high, setHigh] = useState(0);
   const [low, setLow] = useState(0);
   const [volume, setVolume] = useState(0);
-  const [coinData, setCoinData] = useState<CoinData | null>(null);
-  const [coinList, setCoinList] = useState<{ id: string; symbol: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const searchRef = useRef<HTMLDivElement>(null);
@@ -119,59 +97,52 @@ export default function TradePage() {
   const timeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
   const visibleTimeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D"];
 
-  const filteredCoins = coinList.filter(c => 
-    c.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.id.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 50);
+  const filteredCoins = POPULAR_COINS.filter(c => 
+    c.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // ===== FETCH 1000+ COINS LIST =====
+  // ===== FETCH PRICE =====
+  const updatePrice = async () => {
+    const data = await fetchPrice(displaySymbol);
+    if (data) {
+      setPrice(data.price);
+      setPriceChange(data.change);
+      setHigh(data.high);
+      setLow(data.low);
+      setVolume(data.volume);
+    }
+    setLoading(false);
+  };
+
+  // ===== REAL-TIME WEBSOCKET =====
   useEffect(() => {
-    const loadCoins = async () => {
-      try {
-        const list = await fetchCoinList();
-        setCoinList(list.slice(0, 1000).map((id: string) => ({ id, symbol: id.slice(0, 4).toUpperCase() })));
-      } catch (error) {
-        console.error("Error fetching coin list:", error);
+    const symbol = pair.toLowerCase();
+    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@trade`;
+    
+    wsRef.current = new WebSocket(wsUrl);
+
+    wsRef.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.p) {
+        setPrice(parseFloat(data.p));
       }
     };
-    loadCoins();
-  }, []);
 
-  // ===== FETCH COIN DATA =====
-  const updateCoinData = async () => {
-    try {
-      const allCoins: CoinData[] = [];
-      let page = 1;
-      let totalFetched = 0;
+    wsRef.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
-      while (totalFetched < TOP_COINS_COUNT) {
-        const data = await fetchTopCoins(page);
-        if (data.length === 0) break;
-        allCoins.push(...data);
-        totalFetched += data.length;
-        page++;
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
       }
-
-      const found = allCoins.find(c => c.id === displaySymbol || c.symbol === displaySymbol);
-      if (found) {
-        setCoinData(found);
-        setPrice(found.current_price);
-        setPriceChange(found.price_change_percentage_24h || 0);
-        setHigh(found.high_24h || 0);
-        setLow(found.low_24h || 0);
-        setVolume(found.total_volume || 0);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching coin data:", error);
-      setLoading(false);
-    }
-  };
+    };
+  }, [pair]);
 
   // ===== INITIAL LOAD =====
   useEffect(() => {
-    updateCoinData();
-  }, [displaySymbol]);
+    updatePrice();
+  }, [pair]);
 
   // ===== CLOSE SEARCH =====
   useEffect(() => {
@@ -184,13 +155,11 @@ export default function TradePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleCoinSelect = (coinId: string) => {
+  const handleCoinSelect = (coin: string) => {
     setShowCoinSearch(false);
     setSearchQuery("");
-    window.location.href = `/trade/${coinId.toUpperCase()}USDT`;
+    window.location.href = `/trade/${coin}USDT`;
   };
-
-  const displayName = displaySymbol.toUpperCase();
 
   if (loading) {
     return (
@@ -198,7 +167,6 @@ export default function TradePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 border-r-2 border-blue-500 mx-auto"></div>
           <p className="text-gray-400 mt-4">Loading {pair}...</p>
-          <p className="text-xs text-gray-500 mt-2">Fetching data from CoinGecko</p>
         </div>
       </div>
     );
@@ -236,7 +204,7 @@ export default function TradePage() {
             className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-xl font-bold text-white cursor-pointer"
             onClick={() => setShowCoinSearch(!showCoinSearch)}
           >
-            {displayName.slice(0, 2)}
+            {displaySymbol.slice(0, 2)}
           </div>
           <div>
             <div 
@@ -246,14 +214,14 @@ export default function TradePage() {
               {pair}
               <span className="text-xs text-gray-400">▼</span>
             </div>
-            <div className="text-xs text-gray-500">{displayName} / USDT</div>
+            <div className="text-xs text-gray-500">{displaySymbol} / USDT</div>
           </div>
 
           {showCoinSearch && (
             <div className="absolute top-full left-0 mt-2 bg-[#1A1A1A] border border-gray-700 rounded-xl p-3 z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
               <input
                 type="text"
-                placeholder="Search 1000+ coins..."
+                placeholder="Search coins..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
@@ -263,12 +231,11 @@ export default function TradePage() {
                 {filteredCoins.length > 0 ? (
                   filteredCoins.map((coin) => (
                     <button
-                      key={coin.id}
-                      onClick={() => handleCoinSelect(coin.id)}
-                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition flex items-center justify-between"
+                      key={coin}
+                      onClick={() => handleCoinSelect(coin)}
+                      className="w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-800 rounded-lg transition"
                     >
-                      <span>{coin.id}</span>
-                      <span className="text-xs text-gray-500">{coin.symbol}</span>
+                      {coin}/USDT
                     </button>
                   ))
                 ) : (
@@ -292,7 +259,7 @@ export default function TradePage() {
             <div><span className="text-gray-500">24H High</span> <span className="text-white">{high > 0 ? high.toFixed(2) : "---"}</span></div>
             <div><span className="text-gray-500">24H Low</span> <span className="text-white">{low > 0 ? low.toFixed(2) : "---"}</span></div>
             <div><span className="text-gray-500">24H Vol</span> <span className="text-white">{volume > 0 ? volume.toLocaleString() : "---"}</span></div>
-            <div><span className="text-gray-500">Market Cap</span> <span className="text-white">{coinData?.market_cap ? `$${(coinData.market_cap / 1e9).toFixed(2)}B` : "---"}</span></div>
+            <div><span className="text-gray-500">24H Amount</span> <span className="text-white">---</span></div>
           </div>
         </div>
       </div>
@@ -341,7 +308,7 @@ export default function TradePage() {
           </div>
 
           <div className="flex-1 bg-[#0F1217] p-2 min-h-[250px]">
-            <CMCChart symbol={displayName} />
+            <CMCChart symbol={displaySymbol} />
           </div>
 
           <div className="bg-[#111] px-4 py-1.5 border-t border-gray-800 flex flex-wrap gap-4 text-xs">
@@ -460,14 +427,14 @@ export default function TradePage() {
                 const p = parseFloat(priceInput?.value.replace(/,/g, "") || "0");
                 const a = parseFloat(amountInput?.value || "0");
                 if (p > 0 && a > 0) {
-                  alert(`Order placed: ${side} ${displayName} @ ${p} x ${a}`);
+                  alert(`Order placed: ${side} ${displaySymbol} @ ${p} x ${a}`);
                 } else {
                   alert("Please enter valid price and amount");
                 }
               }}
               className={`w-full mt-2 py-3 rounded-xl text-base font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}
             >
-              {side === "buy" ? `Buy ${displayName}` : `Sell ${displayName}`}
+              {side === "buy" ? `Buy ${displaySymbol}` : `Sell ${displaySymbol}`}
             </button>
           </div>
         </div>
