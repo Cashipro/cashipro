@@ -8,7 +8,6 @@ import { useParams } from "next/navigation";
 const COINS = [
   "BTC", "ETH", "BNB", "SOL", "XRP",
   "ADA", "DOGE", "DOT", "MATIC", "LINK",
-  "AVAX", "UNI", "ATOM", "ETC", "FIL",
 ];
 
 // ===== CMC CHART COMPONENT =====
@@ -19,6 +18,9 @@ function CMCChart({ symbol }: { symbol: string }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Clear previous content
+    containerRef.current.innerHTML = "";
+
     const script = document.createElement("script");
     script.src = "https://files.coinmarketcap.com/static/widget/coinPriceBlock.js";
     script.async = true;
@@ -27,7 +29,8 @@ function CMCChart({ symbol }: { symbol: string }) {
       if (containerRef.current) {
         const widget = document.createElement("div");
         widget.id = widgetId;
-        widget.setAttribute("coins", "1,1027,825");
+        // Coin IDs: 1=BTC, 1027=ETH, 1839=BNB, 5426=SOL, 52=XRP
+        widget.setAttribute("coins", "1,1027,1839,5426,52");
         widget.setAttribute("currency", "USD");
         widget.setAttribute("theme", "dark");
         widget.setAttribute("transparent", "false");
@@ -45,7 +48,7 @@ function CMCChart({ symbol }: { symbol: string }) {
     };
   }, [symbol]);
 
-  return <div ref={containerRef} className="w-full h-full min-h-[300px]" />;
+  return <div ref={containerRef} className="w-full h-full min-h-[200px]" />;
 }
 
 // ===== TYPE DEFINITIONS =====
@@ -64,13 +67,31 @@ export default function TradePage() {
   const [showTPSL, setShowTPSL] = useState(false);
   const [showCoinSearch, setShowCoinSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCoin, setSelectedCoin] = useState(pair);
+  const [activeTimeframe, setActiveTimeframe] = useState("15m");
+  const [showTimeframes, setShowTimeframes] = useState(false);
 
   const [price, setPrice] = useState(65432.50);
   const [priceChange, setPriceChange] = useState(2.45);
   const [orderBook, setOrderBook] = useState<{ bids: Order[]; asks: Order[] }>({ bids: [], asks: [] });
 
   const searchRef = useRef<HTMLDivElement>(null);
+
+  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D", "1W", "1M"];
+  const visibleTimeframes = ["1s", "1m", "5m", "15m", "30m", "1H", "4H", "1D"];
+
+  // Mock price data per coin
+  const coinPrices: Record<string, number> = {
+    BTC: 65432.50,
+    ETH: 3456.80,
+    BNB: 598.20,
+    SOL: 178.50,
+    XRP: 0.62,
+    ADA: 0.46,
+    DOGE: 0.15,
+    DOT: 7.82,
+    MATIC: 0.72,
+    LINK: 14.32,
+  };
 
   const filteredCoins = COINS.filter(c => 
     c.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,6 +107,21 @@ export default function TradePage() {
         if (data.orderBook.bids.length > 0) {
           setPrice(data.orderBook.bids[0].price);
         }
+      } else {
+        const bids: Order[] = [];
+        const asks: Order[] = [];
+        const basePrice = coinPrices[displaySymbol] || 65432.50;
+        for (let i = 0; i < 8; i++) {
+          bids.push({
+            price: Math.round((basePrice - (i + 1) * 5) * 100) / 100,
+            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
+          });
+          asks.push({
+            price: Math.round((basePrice + (i + 1) * 5) * 100) / 100,
+            amount: Math.round((Math.random() * 2 + 0.1) * 100) / 100,
+          });
+        }
+        setOrderBook({ bids, asks });
       }
     } catch (error) {
       console.error("Error fetching order book:", error);
@@ -108,6 +144,13 @@ export default function TradePage() {
       console.error("Error placing order:", error);
     }
   };
+
+  // ===== UPDATE PRICE ON COIN CHANGE =====
+  useEffect(() => {
+    const newPrice = coinPrices[displaySymbol] || 65432.50;
+    setPrice(newPrice);
+    fetchOrderBook();
+  }, [displaySymbol]);
 
   // ===== REAL-TIME DATA =====
   useEffect(() => {
@@ -134,7 +177,6 @@ export default function TradePage() {
   }, []);
 
   const handleCoinSelect = (coin: string) => {
-    setSelectedCoin(coin);
     setShowCoinSearch(false);
     setSearchQuery("");
     window.location.href = `/trade/${coin}USDT`;
@@ -242,6 +284,47 @@ export default function TradePage() {
               <span className="text-gray-400">Info</span>
               <span className="text-gray-400">Trading Data</span>
               <span className="text-gray-400">Compare</span>
+            </div>
+
+            {/* Timeframes */}
+            <div className="flex items-center gap-1 text-xs relative">
+              {visibleTimeframes.map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setActiveTimeframe(tf)}
+                  className={`px-2 py-1 rounded transition ${
+                    activeTimeframe === tf
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-400 hover:bg-gray-800"
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowTimeframes(!showTimeframes)}
+                className="px-1.5 py-1 text-gray-400 hover:text-white transition"
+              >
+                ▼
+              </button>
+              {showTimeframes && (
+                <div className="absolute top-full right-0 mt-1 bg-[#1A1A1A] border border-gray-700 rounded-lg p-1 z-10 min-w-[60px]">
+                  {timeframes.map((tf) => (
+                    <button
+                      key={tf}
+                      onClick={() => {
+                        setActiveTimeframe(tf);
+                        setShowTimeframes(false);
+                      }}
+                      className={`block w-full text-left px-3 py-1 text-xs rounded hover:bg-gray-800 transition ${
+                        activeTimeframe === tf ? "text-blue-400" : "text-gray-400"
+                      }`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
