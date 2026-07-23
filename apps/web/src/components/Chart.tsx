@@ -1,162 +1,167 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createChart, ColorType } from "lightweight-charts";
+import React, { useEffect, useRef, useState } from "react";
+import { createChart, IChartApi, ISeriesApi, CandlestickSeries } from "lightweight-charts";
 
 interface ChartProps {
-  symbol?: string;
-  theme?: "dark" | "light";
-  height?: number;
-  onCandleClick?: (candle: any) => void;
+  symbol: string;
 }
 
-// ===== BINANCE API — REAL KLINES =====
-const fetchKlines = async (symbol: string, interval: string = "15m", limit: number = 500) => {
-  try {
-    const binanceInterval = getBinanceInterval(interval);
-    const res = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${binanceInterval}&limit=${limit}`
-    );
-    const data = await res.json();
-    return data.map((candle: any) => ({
-      time: candle[0] / 1000,
-      open: parseFloat(candle[1]),
-      high: parseFloat(candle[2]),
-      low: parseFloat(candle[3]),
-      close: parseFloat(candle[4]),
-      volume: parseFloat(candle[5]),
-    }));
-  } catch (error) {
-    console.error("Error fetching klines:", error);
-    return [];
-  }
-};
+const timeframes = [
+  { label: "1m", value: "1" },
+  { label: "5m", value: "5" },
+  { label: "15m", value: "15" },
+  { label: "1H", value: "60" },
+  { label: "4H", value: "240" },
+  { label: "1D", value: "D" },
+];
 
-const getBinanceInterval = (tf: string): string => {
-  const map: Record<string, string> = {
-    "1s": "1s",
-    "1m": "1m",
-    "5m": "5m",
-    "15m": "15m",
-    "30m": "30m",
-    "1h": "1h",
-    "4h": "4h",
-    "1D": "1d",
-    "1W": "1w",
-  };
-  return map[tf] || "15m";
-};
+export default function Chart({ symbol }: ChartProps) {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeSeriesRef = useRef<any>(null);
 
-export default function Chart({
-  symbol = "BTCUSDT",
-  theme = "dark",
-  height = 400,
-  onCandleClick,
-}: ChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTF, setSelectedTF] = useState("15");
+  const [loading, setLoading] = useState(true);
 
-  // ===== LOAD DATA =====
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      const data = await fetchKlines(symbol, "15m", 500);
-      setChartData(data);
-      setIsLoading(false);
-    };
-    loadData();
-  }, [symbol]);
+  // Fetch Kline data from Binance
+  const fetchKlines = async (interval: string) => {
+    try {
+      const limit = 500;
+      const res = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+      );
+      const data = await res.json();
 
-  // ===== CHART =====
-  useEffect(() => {
-    if (!containerRef.current || isLoading || chartData.length === 0) return;
+      const candles = data.map((d: any) => ({
+        time: Math.floor(d[0] / 1000) as any, // timestamp in seconds
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+      }));
 
-    if (chartRef.current) {
-      chartRef.current.remove();
-      chartRef.current = null;
+      const volumes = data.map((d: any) => ({
+        time: Math.floor(d[0] / 1000) as any,
+        value: parseFloat(d[5]),
+        color: parseFloat(d[4]) >= parseFloat(d[1]) ? "#26a69a" : "#ef5350",
+      }));
+
+      return { candles, volumes };
+    } catch (err) {
+      console.error("Failed to fetch klines", err);
+      return { candles: [], volumes: [] };
     }
+  };
 
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: theme === "dark" ? "#0A0A0A" : "#FFFFFF" },
-        textColor: theme === "dark" ? "#d1d4dc" : "#000000",
-      },
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 500,
+      layout: { background: { color: "#0F1217" }, textColor: "#DDD" },
       grid: {
-        vertLines: { color: theme === "dark" ? "rgba(42, 46, 57, 0.6)" : "rgba(200, 200, 200, 0.6)" },
-        horzLines: { color: theme === "dark" ? "rgba(42, 46, 57, 0.6)" : "rgba(200, 200, 200, 0.6)" },
+        vertLines: { color: "#1F2937" },
+        horzLines: { color: "#1F2937" },
       },
-      autoSize: true,
-      crosshair: { mode: 1 },
-      rightPriceScale: { borderColor: theme === "dark" ? "rgba(197, 203, 206, 0.3)" : "rgba(100, 100, 100, 0.3)" },
-      timeScale: {
-        borderColor: theme === "dark" ? "rgba(197, 203, 206, 0.3)" : "rgba(100, 100, 100, 0.3)",
-        timeVisible: true,
-        secondsVisible: false,
-      },
+      crosshair: { mode: 0 },
+      timeScale: { timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: "#1F2937" },
     });
-    chartRef.current = chart;
 
-    const series = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
       downColor: "#ef5350",
+      borderUpColor: "#26a69a",
+      borderDownColor: "#ef5350",
       wickUpColor: "#26a69a",
       wickDownColor: "#ef5350",
-      borderVisible: false,
-      wickVisible: true,
     });
 
-    series.setData(chartData);
-    chart.timeScale().fitContent();
-
-    // ✅ Click event on chart
-    chart.subscribeClick((param: any) => {
-      if (param.time && onCandleClick) {
-        const candle = chartData.find((d) => d.time === param.time);
-        if (candle) {
-          onCandleClick(candle);
-        }
-      }
+    const volumeSeries = chart.addHistogramSeries({
+      color: "#26a69a",
+      priceFormat: { type: "volume" },
+      priceScaleId: "volume",
+      scaleMargins: { top: 0.8, bottom: 0 },
     });
 
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+
+    // Resize handler
     const handleResize = () => {
-      if (chartRef.current && containerRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      if (chartContainerRef.current) {
+        chart.resize(
+          chartContainerRef.current.clientWidth,
+          chartContainerRef.current.clientHeight
+        );
       }
     };
     window.addEventListener("resize", handleResize);
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
-      }
+      chart.remove();
     };
-  }, [chartData, theme, onCandleClick]);
+  }, []);
 
-  if (isLoading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0A0A0A]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-yellow-500 border-r-2 border-yellow-500 mx-auto"></div>
-          <p className="text-gray-400 text-sm mt-2">Loading chart...</p>
+  // Load data when symbol or timeframe changes
+  useEffect(() => {
+    const loadChartData = async () => {
+      setLoading(true);
+      const { candles, volumes } = await fetchKlines(selectedTF);
+
+      if (candleSeriesRef.current && candles.length > 0) {
+        candleSeriesRef.current.setData(candles);
+      }
+      if (volumeSeriesRef.current && volumes.length > 0) {
+        volumeSeriesRef.current.setData(volumes);
+      }
+
+      // Fit the chart
+      if (chartRef.current) {
+        chartRef.current.timeScale().fitContent();
+      }
+      setLoading(false);
+    };
+
+    loadChartData();
+  }, [symbol, selectedTF]);
+
+  return (
+    <div className="flex flex-col h-full bg-[#0F1217]">
+      {/* Timeframe Selector */}
+      <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-700 bg-[#111] flex-shrink-0">
+        {timeframes.map((tf) => (
+          <button
+            key={tf.value}
+            onClick={() => setSelectedTF(tf.value)}
+            className={`px-3 py-1 text-xs rounded transition ${
+              selectedTF === tf.value
+                ? "bg-yellow-500 text-black font-medium"
+                : "text-gray-400 hover:text-white hover:bg-gray-800"
+            }`}
+          >
+            {tf.label}
+          </button>
+        ))}
+        <div className="ml-auto text-xs text-gray-500">
+          {symbol} • Binance Spot
         </div>
       </div>
-    );
-  }
 
-  if (chartData.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0A0A0A]">
-        <div className="text-center">
-          <p className="text-gray-500">No chart data</p>
-          <p className="text-xs text-gray-600 mt-1">Trade to see data</p>
-        </div>
+      {/* Chart Container */}
+      <div className="flex-1 relative min-h-0">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-yellow-500"></div>
+          </div>
+        )}
+        <div ref={chartContainerRef} className="w-full h-full" />
       </div>
-    );
-  }
-
-  return <div ref={containerRef} className="w-full h-full" style={{ height: `${height}px` }} />;
+    </div>
+  );
 }
