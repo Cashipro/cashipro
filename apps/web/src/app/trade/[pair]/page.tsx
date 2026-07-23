@@ -125,12 +125,13 @@ const getLimitForTimeframe = (tf: string): number => {
 };
 
 // ============================================================
-// 3. CHART COMPONENT
+// 3. CHART COMPONENT (FIXED)
 // ============================================================
 function RealChart({ symbol, interval, onCandleClick }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const isCandlestick = interval !== "1s";
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -163,7 +164,8 @@ function RealChart({ symbol, interval, onCandleClick }: any) {
       });
     }
 
-    if (interval !== "1s" && series.subscribeClick) {
+    // ✅ FIX: Sirf candlestick series par subscribeClick call karo
+    if (isCandlestick && series.subscribeClick) {
       series.subscribeClick((param: any) => {
         if (param.time && onCandleClick) {
           onCandleClick(param);
