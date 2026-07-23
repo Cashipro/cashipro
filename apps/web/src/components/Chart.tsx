@@ -6,17 +6,26 @@ interface ChartProps {
   symbol?: string;
   theme?: "dark" | "light";
   height?: number;
+  interval?: string;
 }
 
 export default function Chart({
   symbol = "BTCUSDT",
   theme = "dark",
   height = 400,
+  interval = "15",
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Cleanup previous widget
+    if (widgetRef.current) {
+      widgetRef.current.remove();
+      widgetRef.current = null;
+    }
 
     // Clear container
     containerRef.current.innerHTML = "";
@@ -31,7 +40,8 @@ export default function Chart({
       const widgetId = `tradingview_${Date.now()}`;
       containerRef.current.id = widgetId;
 
-      new window.TradingView.MediumWidget({
+      // ✅ Binance Style Chart — Sirf Candlestick Chart
+      widgetRef.current = new window.TradingView.MediumWidget({
         symbols: [[symbol, `BINANCE:${symbol}|1D`]],
         chartOnly: true,
         width: "100%",
@@ -41,6 +51,7 @@ export default function Chart({
         autosize: true,
         showVolume: false,
         hide_top_toolbar: true,
+        hide_side_toolbar: true,
         container_id: widgetId,
       });
     };
@@ -48,6 +59,12 @@ export default function Chart({
     document.head.appendChild(script);
 
     return () => {
+      if (widgetRef.current) {
+        try {
+          widgetRef.current.remove();
+        } catch (e) {}
+        widgetRef.current = null;
+      }
       if (containerRef.current) {
         containerRef.current.innerHTML = "";
       }
