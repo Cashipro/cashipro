@@ -125,7 +125,7 @@ const getLimitForTimeframe = (tf: string): number => {
 };
 
 // ============================================================
-// 3. CHART COMPONENT (FIXED)
+// 3. CHART COMPONENT
 // ============================================================
 function RealChart({ symbol, interval, onCandleClick }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -163,7 +163,6 @@ function RealChart({ symbol, interval, onCandleClick }: any) {
       });
     }
 
-    // ✅ FIX: sirf candlestick series par subscribeClick
     if (interval !== "1s" && series && typeof series.subscribeClick === "function") {
       series.subscribeClick((param: any) => {
         if (param.time && onCandleClick) {
@@ -257,7 +256,8 @@ export default function TradePage() {
   const [orderBook, setOrderBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [orderType, setOrderType] = useState<"limit" | "market">("limit");
+  // ✅ FIX: orderType mein "tpSl" add karo
+  const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
   const [amount, setAmount] = useState(0);
   const [showTPSL, setShowTPSL] = useState(false);
   const [tradePrice, setTradePrice] = useState(0);
