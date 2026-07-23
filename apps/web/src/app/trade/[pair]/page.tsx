@@ -74,12 +74,6 @@ const fetchRealCoins = async () => {
 // 2. TIMEFRAME CONFIGURATIONS
 // ============================================================
 
-const timeframeGroups = {
-  line: ["1s"],
-  main: ["15m", "1h", "4h", "1D", "1W"],
-  more: ["1m", "3m", "5m", "10m", "30m", "2h", "6h", "8h", "12h", "2D", "3D", "5D", "Month"],
-};
-
 const getBinanceInterval = (tf: string): string => {
   const map: Record<string, string> = {
     "1s": "1s",
@@ -476,7 +470,6 @@ export default function TradePage() {
             <div className="border-b border-gray-700 px-4 py-1.5 flex items-center gap-1 text-sm flex-shrink-0 flex-wrap">
               <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">Chart</span>
               
-              {/* 1s - Line Chart */}
               <button
                 onClick={() => handleTimeframeSelect("1s")}
                 className={`px-2 py-0.5 rounded text-xs transition ${
@@ -486,7 +479,6 @@ export default function TradePage() {
                 1s
               </button>
               
-              {/* Main Timeframes */}
               {["15m", "1h", "4h", "1D", "1W"].map((tf) => (
                 <button
                   key={tf}
@@ -499,7 +491,6 @@ export default function TradePage() {
                 </button>
               ))}
               
-              {/* More Button with Arrow */}
               <div className="relative">
                 <button
                   onClick={() => setShowMoreTimeframes(!showMoreTimeframes)}
@@ -560,7 +551,6 @@ export default function TradePage() {
           <div className="w-96 flex flex-col flex-shrink-0 bg-[#0A0A0A]">
             {/* TRADE FORM */}
             <div className="p-4 bg-[#111] border-b border-gray-700 flex-shrink-0 overflow-y-auto max-h-[55%]">
-              {/* Buy/Sell */}
               <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
                 <button
                   onClick={() => setSide("buy")}
@@ -576,7 +566,6 @@ export default function TradePage() {
                 </button>
               </div>
 
-              {/* Limit / Market / TP/SL */}
               <div className="flex gap-1 mb-3 text-xs">
                 <button
                   onClick={() => setOrderType("limit")}
@@ -602,12 +591,7 @@ export default function TradePage() {
               <div className="mb-2">
                 <div className="flex justify-between text-[10px] text-gray-500"><span>Price (USDT)</span></div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => adjustPrice(-1)}
-                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
-                  >
-                    −
-                  </button>
+                  <button onClick={() => adjustPrice(-1)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">−</button>
                   <input
                     type="number"
                     value={orderType === "market" ? "Market" : tradePrice || ""}
@@ -617,12 +601,7 @@ export default function TradePage() {
                       orderType === "market" ? "opacity-60 cursor-not-allowed" : ""
                     }`}
                   />
-                  <button
-                    onClick={() => adjustPrice(1)}
-                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
-                  >
-                    +
-                  </button>
+                  <button onClick={() => adjustPrice(1)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">+</button>
                 </div>
               </div>
 
@@ -633,12 +612,7 @@ export default function TradePage() {
                   <span className="text-yellow-400">Balance: 0.0142 USDT</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => adjustAmount(-0.001)}
-                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
-                  >
-                    −
-                  </button>
+                  <button onClick={() => adjustAmount(-0.001)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">−</button>
                   <input
                     type="number"
                     value={amount || ""}
@@ -646,12 +620,7 @@ export default function TradePage() {
                     placeholder="0"
                     className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none focus:border-yellow-500"
                   />
-                  <button
-                    onClick={() => adjustAmount(0.001)}
-                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
-                  >
-                    +
-                  </button>
+                  <button onClick={() => adjustAmount(0.001)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">+</button>
                 </div>
               </div>
 
@@ -779,4 +748,15 @@ export default function TradePage() {
       {showCustomModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-white font-bold mb-4">Custom Interval</h3
+            <h3 className="text-white font-bold mb-4">Custom Interval</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customInterval}
+                onChange={(e) => setCustomInterval(e.target.value)}
+                placeholder="e.g., 45m, 90m, 2h"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
+              />
+              <button
+                onClick={() => {
+                  if (
