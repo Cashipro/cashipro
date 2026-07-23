@@ -267,6 +267,7 @@ export default function TradePage() {
 
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // ===== LOAD COINS =====
   useEffect(() => {
     const loadCoins = async () => {
       const list = await fetchRealCoins();
@@ -297,6 +298,7 @@ export default function TradePage() {
     setOrderBook(book);
   };
 
+  // ===== WEBSOCKET =====
   useEffect(() => {
     if (!selectedCoin) return;
     const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${selectedCoin.toLowerCase()}usdt@trade`);
@@ -311,6 +313,7 @@ export default function TradePage() {
     return () => ws.close();
   }, [selectedCoin]);
 
+  // ===== ORDER BOOK UPDATE =====
   useEffect(() => {
     if (!selectedCoin) return;
     const interval = setInterval(async () => {
@@ -320,6 +323,7 @@ export default function TradePage() {
     return () => clearInterval(interval);
   }, [selectedCoin]);
 
+  // ===== CLOSE SEARCH =====
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -358,14 +362,16 @@ export default function TradePage() {
   };
 
   const adjustPrice = (delta: number) => {
-    setTradePrice(prev => Math.max(0, prev + delta));
+    setTradePrice((prev) => Math.max(0, prev + delta));
   };
 
   const adjustAmount = (delta: number) => {
-    setAmount(prev => Math.max(0, prev + delta));
+    setAmount((prev) => Math.max(0, prev + delta));
   };
 
-  const filteredCoins = coins.filter((c) => c.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCoins = coins.filter((c) =>
+    c.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   const total = tradePrice * amount;
   const { bids, asks } = orderBook;
 
@@ -386,19 +392,31 @@ export default function TradePage() {
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50 flex-shrink-0">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-xl font-bold text-black">C</div>
+            <div className="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-xl font-bold text-black">
+              C
+            </div>
             <span className="font-bold text-2xl text-white">CashiPro</span>
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm text-gray-300">
-            <Link href="/markets" className="hover:text-yellow-400">Markets</Link>
-            <Link href="/trade/BTCUSDT" className="text-yellow-400 font-medium">Spot</Link>
-            <Link href="/futures" className="hover:text-yellow-400">Futures</Link>
+            <Link href="/markets" className="hover:text-yellow-400">
+              Markets
+            </Link>
+            <Link href="/trade/BTCUSDT" className="text-yellow-400 font-medium">
+              Spot
+            </Link>
+            <Link href="/futures" className="hover:text-yellow-400">
+              Futures
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">Log In</Link>
+          <Link href="/login" className="text-sm text-gray-300 hover:text-white hidden md:block">
+            Log In
+          </Link>
           <Link href="/register">
-            <button className="bg-yellow-500 text-black px-4 py-1.5 rounded-full text-sm font-medium hover:bg-yellow-400">Sign Up</button>
+            <button className="bg-yellow-500 text-black px-4 py-1.5 rounded-full text-sm font-medium hover:bg-yellow-400">
+              Sign Up
+            </button>
           </Link>
         </div>
       </div>
@@ -428,7 +446,9 @@ export default function TradePage() {
                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-800 transition flex items-center justify-between"
                   >
                     <span>{coin}/USDT</span>
-                    {selectedCoin === coin && <span className="text-yellow-400 text-xs">✓</span>}
+                    {selectedCoin === coin && (
+                      <span className="text-yellow-400 text-xs">✓</span>
+                    )}
                   </button>
                 ))}
                 {filteredCoins.length === 0 && (
@@ -445,8 +465,13 @@ export default function TradePage() {
               </div>
               <div>
                 <div className="text-xl font-bold text-white">{selectedCoin}/USDT</div>
-                <div className={`text-xs font-medium ${priceChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-                  {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
+                <div
+                  className={`text-xs font-medium ${
+                    priceChange >= 0 ? "text-green-500" : "text-red-500"
+                  }`}
+                >
+                  {priceChange >= 0 ? "+" : ""}
+                  {priceChange.toFixed(2)}%
                 </div>
               </div>
             </div>
@@ -456,9 +481,15 @@ export default function TradePage() {
               </span>
             </div>
             <div className="flex gap-4 text-xs text-gray-500 ml-auto">
-              <span>24H H: <span className="text-white">{high > 0 ? high.toFixed(2) : "---"}</span></span>
-              <span>24H L: <span className="text-white">{low > 0 ? low.toFixed(2) : "---"}</span></span>
-              <span>24H Vol: <span className="text-white">{volume > 0 ? volume.toFixed(2) : "---"}</span></span>
+              <span>
+                24H H: <span className="text-white">{high > 0 ? high.toFixed(2) : "---"}</span>
+              </span>
+              <span>
+                24H L: <span className="text-white">{low > 0 ? low.toFixed(2) : "---"}</span>
+              </span>
+              <span>
+                24H Vol: <span className="text-white">{volume > 0 ? volume.toFixed(2) : "---"}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -468,56 +499,88 @@ export default function TradePage() {
           {/* LEFT: CHART */}
           <div className="flex-1 flex flex-col min-w-0 border-r border-gray-700">
             <div className="border-b border-gray-700 px-4 py-1.5 flex items-center gap-1 text-sm flex-shrink-0 flex-wrap">
-              <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">Chart</span>
-              
+              <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">
+                Chart
+              </span>
+
               <button
                 onClick={() => handleTimeframeSelect("1s")}
                 className={`px-2 py-0.5 rounded text-xs transition ${
-                  timeframe === "1s" ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white"
+                  timeframe === "1s"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : "text-gray-400 hover:text-white"
                 }`}
               >
                 1s
               </button>
-              
+
               {["15m", "1h", "4h", "1D", "1W"].map((tf) => (
                 <button
                   key={tf}
                   onClick={() => handleTimeframeSelect(tf)}
                   className={`px-2 py-0.5 rounded text-xs transition ${
-                    timeframe === tf ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white"
+                    timeframe === tf
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : "text-gray-400 hover:text-white"
                   }`}
                 >
                   {tf}
                 </button>
               ))}
-              
+
               <div className="relative">
                 <button
                   onClick={() => setShowMoreTimeframes(!showMoreTimeframes)}
                   className="px-2 py-0.5 rounded text-xs text-gray-400 hover:text-white transition flex items-center gap-0.5"
                 >
                   More
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
-                
+
                 {showMoreTimeframes && (
                   <div className="absolute top-full left-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg p-2 z-50 min-w-[150px] max-h-60 overflow-y-auto">
                     <div className="grid grid-cols-2 gap-1">
-                      {["1m", "3m", "5m", "10m", "30m", "2h", "6h", "8h", "12h", "2D", "3D", "5D", "Month"].map((tf) => (
+                      {[
+                        "1m",
+                        "3m",
+                        "5m",
+                        "10m",
+                        "30m",
+                        "2h",
+                        "6h",
+                        "8h",
+                        "12h",
+                        "2D",
+                        "3D",
+                        "5D",
+                        "Month",
+                      ].map((tf) => (
                         <button
                           key={tf}
                           onClick={() => handleTimeframeSelect(tf)}
                           className={`px-2 py-1 rounded text-xs transition ${
-                            timeframe === tf ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white hover:bg-gray-800"
+                            timeframe === tf
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "text-gray-400 hover:text-white hover:bg-gray-800"
                           }`}
                         >
                           {tf}
                         </button>
                       ))}
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         setShowMoreTimeframes(false);
@@ -533,16 +596,31 @@ export default function TradePage() {
             </div>
 
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
-              <RealChart symbol={selectedCoin} interval={timeframe} onCandleClick={handleCandleClick} />
+              <RealChart
+                symbol={selectedCoin}
+                interval={timeframe}
+                onCandleClick={handleCandleClick}
+              />
             </div>
 
             {candleData && (
               <div className="bg-[#111] px-4 py-1 border-t border-gray-700 flex gap-4 text-xs flex-shrink-0 flex-wrap">
-                <span>Time: {new Date(candleData.time * 1000).toLocaleString()}</span>
-                <span>O: <span className="text-white">{candleData.open}</span></span>
-                <span>H: <span className="text-green-500">{candleData.high}</span></span>
-                <span>L: <span className="text-red-500">{candleData.low}</span></span>
-                <span>C: <span className="text-white">{candleData.close}</span></span>
+                <span>
+                  Time:{" "}
+                  {new Date(candleData.time * 1000).toLocaleString()}
+                </span>
+                <span>
+                  O: <span className="text-white">{candleData.open}</span>
+                </span>
+                <span>
+                  H: <span className="text-green-500">{candleData.high}</span>
+                </span>
+                <span>
+                  L: <span className="text-red-500">{candleData.low}</span>
+                </span>
+                <span>
+                  C: <span className="text-white">{candleData.close}</span>
+                </span>
               </div>
             )}
           </div>
@@ -554,13 +632,21 @@ export default function TradePage() {
               <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
                 <button
                   onClick={() => setSide("buy")}
-                  className={`flex-1 py-2.5 text-sm font-bold transition ${side === "buy" ? "bg-green-500 text-black" : "text-gray-400"}`}
+                  className={`flex-1 py-2.5 text-sm font-bold transition ${
+                    side === "buy"
+                      ? "bg-green-500 text-black"
+                      : "text-gray-400"
+                  }`}
                 >
                   Buy
                 </button>
                 <button
                   onClick={() => setSide("sell")}
-                  className={`flex-1 py-2.5 text-sm font-bold transition ${side === "sell" ? "bg-red-500 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-2.5 text-sm font-bold transition ${
+                    side === "sell"
+                      ? "bg-red-500 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   Sell
                 </button>
@@ -569,19 +655,31 @@ export default function TradePage() {
               <div className="flex gap-1 mb-3 text-xs">
                 <button
                   onClick={() => setOrderType("limit")}
-                  className={`flex-1 py-1.5 rounded transition ${orderType === "limit" ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-1.5 rounded transition ${
+                    orderType === "limit"
+                      ? "bg-gray-700 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   Limit
                 </button>
                 <button
                   onClick={() => setOrderType("market")}
-                  className={`flex-1 py-1.5 rounded transition ${orderType === "market" ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-1.5 rounded transition ${
+                    orderType === "market"
+                      ? "bg-gray-700 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   Market
                 </button>
                 <button
                   onClick={() => setOrderType("tpSl")}
-                  className={`flex-1 py-1.5 rounded transition ${orderType === "tpSl" ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-1.5 rounded transition ${
+                    orderType === "tpSl"
+                      ? "bg-gray-700 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   TP/SL
                 </button>
@@ -589,19 +687,37 @@ export default function TradePage() {
 
               {/* Price Box with +/- */}
               <div className="mb-2">
-                <div className="flex justify-between text-[10px] text-gray-500"><span>Price (USDT)</span></div>
+                <div className="flex justify-between text-[10px] text-gray-500">
+                  <span>Price (USDT)</span>
+                </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => adjustPrice(-1)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">−</button>
+                  <button
+                    onClick={() => adjustPrice(-1)}
+                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
+                  >
+                    −
+                  </button>
                   <input
                     type="number"
-                    value={orderType === "market" ? "Market" : tradePrice || ""}
-                    onChange={(e) => setTradePrice(parseFloat(e.target.value))}
+                    value={
+                      orderType === "market" ? "Market" : tradePrice || ""
+                    }
+                    onChange={(e) =>
+                      setTradePrice(parseFloat(e.target.value))
+                    }
                     disabled={orderType === "market"}
                     className={`flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none focus:border-yellow-500 ${
-                      orderType === "market" ? "opacity-60 cursor-not-allowed" : ""
+                      orderType === "market"
+                        ? "opacity-60 cursor-not-allowed"
+                        : ""
                     }`}
                   />
-                  <button onClick={() => adjustPrice(1)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">+</button>
+                  <button
+                    onClick={() => adjustPrice(1)}
+                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
@@ -609,10 +725,17 @@ export default function TradePage() {
               <div className="mb-2">
                 <div className="flex justify-between text-[10px] text-gray-500">
                   <span>Quantity</span>
-                  <span className="text-yellow-400">Balance: 0.0142 USDT</span>
+                  <span className="text-yellow-400">
+                    Balance: 0.0142 USDT
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => adjustAmount(-0.001)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">−</button>
+                  <button
+                    onClick={() => adjustAmount(-0.001)}
+                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
+                  >
+                    −
+                  </button>
                   <input
                     type="number"
                     value={amount || ""}
@@ -620,7 +743,12 @@ export default function TradePage() {
                     placeholder="0"
                     className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white text-center focus:outline-none focus:border-yellow-500"
                   />
-                  <button onClick={() => adjustAmount(0.001)} className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold">+</button>
+                  <button
+                    onClick={() => adjustAmount(0.001)}
+                    className="w-8 h-8 bg-gray-800 rounded-lg hover:bg-gray-700 text-lg font-bold"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
@@ -645,13 +773,21 @@ export default function TradePage() {
               <div className="flex gap-1 mb-2 text-xs">
                 <button
                   onClick={() => setQuantityType("usdt")}
-                  className={`flex-1 py-1 rounded transition ${quantityType === "usdt" ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-1 rounded transition ${
+                    quantityType === "usdt"
+                      ? "bg-gray-700 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   USDT
                 </button>
                 <button
                   onClick={() => setQuantityType("coin")}
-                  className={`flex-1 py-1 rounded transition ${quantityType === "coin" ? "bg-gray-700 text-white" : "text-gray-400"}`}
+                  className={`flex-1 py-1 rounded transition ${
+                    quantityType === "coin"
+                      ? "bg-gray-700 text-white"
+                      : "text-gray-400"
+                  }`}
                 >
                   {selectedCoin}
                 </button>
@@ -662,9 +798,15 @@ export default function TradePage() {
                 <span className="text-xs text-gray-500">TP/SL</span>
                 <button
                   onClick={() => setShowTPSL(!showTPSL)}
-                  className={`w-8 h-4 rounded-full transition ${showTPSL ? "bg-yellow-500" : "bg-gray-700"}`}
+                  className={`w-8 h-4 rounded-full transition ${
+                    showTPSL ? "bg-yellow-500" : "bg-gray-700"
+                  }`}
                 >
-                  <div className={`w-3 h-3 bg-white rounded-full transition transform ${showTPSL ? "translate-x-4" : "translate-x-0.5"}`} />
+                  <div
+                    className={`w-3 h-3 bg-white rounded-full transition transform ${
+                      showTPSL ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
                 </button>
               </div>
 
@@ -672,19 +814,39 @@ export default function TradePage() {
               {showTPSL && (
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div>
-                    <div className="text-[10px] text-gray-500">TP Trigger</div>
+                    <div className="text-[10px] text-gray-500">
+                      TP Trigger
+                    </div>
                     <div className="flex items-center gap-1">
-                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">−</button>
-                      <input type="text" placeholder="Price" className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white" />
-                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">+</button>
+                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">
+                        −
+                      </button>
+                      <input
+                        type="text"
+                        placeholder="Price"
+                        className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white"
+                      />
+                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">
+                        +
+                      </button>
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-gray-500">SL Trigger</div>
+                    <div className="text-[10px] text-gray-500">
+                      SL Trigger
+                    </div>
                     <div className="flex items-center gap-1">
-                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">−</button>
-                      <input type="text" placeholder="Price" className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white" />
-                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">+</button>
+                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">
+                        −
+                      </button>
+                      <input
+                        type="text"
+                        placeholder="Price"
+                        className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white"
+                      />
+                      <button className="w-6 h-6 bg-gray-800 rounded text-sm">
+                        +
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -697,8 +859,18 @@ export default function TradePage() {
 
               {/* Buy Button */}
               <button
-                onClick={() => alert(`${side === "buy" ? "Buy" : "Sell"} ${selectedCoin} @ $${tradePrice}`)}
-                className={`w-full py-3 rounded-xl text-sm font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}
+                onClick={() =>
+                  alert(
+                    `${
+                      side === "buy" ? "Buy" : "Sell"
+                    } ${selectedCoin} @ $${tradePrice}`
+                  )
+                }
+                className={`w-full py-3 rounded-xl text-sm font-bold transition ${
+                  side === "buy"
+                    ? "bg-green-500 hover:bg-green-600 text-black"
+                    : "bg-red-500 hover:bg-red-600 text-white"
+                }`}
               >
                 {side === "buy" ? "Buy" : "Sell"} {selectedCoin}
               </button>
@@ -706,27 +878,39 @@ export default function TradePage() {
 
             {/* ORDER BOOK */}
             <div className="flex-1 p-2 overflow-y-auto min-h-0 bg-[#0A0A0A]">
-              <div className="text-yellow-400 text-xs font-medium mb-1">Order Book</div>
+              <div className="text-yellow-400 text-xs font-medium mb-1">
+                Order Book
+              </div>
               <div className="text-[10px] text-gray-500 grid grid-cols-3 mb-0.5">
                 <div>Price</div>
                 <div className="text-right">Amount</div>
                 <div className="text-right">Total</div>
               </div>
               {asks.slice(0, 8).map((ask, i) => (
-                <div key={`ask-${i}`} className="grid grid-cols-3 text-xs text-red-400 py-0.5">
+                <div
+                  key={`ask-${i}`}
+                  className="grid grid-cols-3 text-xs text-red-400 py-0.5"
+                >
                   <div>{ask.price}</div>
                   <div className="text-right text-gray-300">{ask.amount}</div>
-                  <div className="text-right text-gray-300">{(ask.price * ask.amount).toFixed(2)}</div>
+                  <div className="text-right text-gray-300">
+                    {(ask.price * ask.amount).toFixed(2)}
+                  </div>
                 </div>
               ))}
               <div className="text-center text-white font-bold py-1 border-y border-gray-700 my-0.5 text-sm">
                 {price > 0 ? price.toFixed(2) : "---"}
               </div>
               {bids.slice(0, 8).map((bid, i) => (
-                <div key={`bid-${i}`} className="grid grid-cols-3 text-xs text-green-400 py-0.5">
+                <div
+                  key={`bid-${i}`}
+                  className="grid grid-cols-3 text-xs text-green-400 py-0.5"
+                >
                   <div>{bid.price}</div>
                   <div className="text-right text-gray-300">{bid.amount}</div>
-                  <div className="text-right text-gray-300">{(bid.price * bid.amount).toFixed(2)}</div>
+                  <div className="text-right text-gray-300">
+                    {(bid.price * bid.amount).toFixed(2)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -736,31 +920,4 @@ export default function TradePage() {
 
       {/* BOTTOM TABS */}
       <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-1.5 flex items-center justify-between text-xs flex-shrink-0">
-        <div className="flex gap-4">
-          <span className="text-yellow-400 border-b-2 border-yellow-400 pb-0.5">Open Orders(0)</span>
-          <span className="text-gray-400">Order History</span>
-          <span className="text-gray-400">Trade History</span>
-        </div>
-        <button className="bg-yellow-500 hover:bg-yellow-400 px-4 py-0.5 rounded-full text-black text-xs font-medium">Deposit</button>
-      </div>
-
-      {/* Custom Interval Modal */}
-      {showCustomModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-white font-bold mb-4">Custom Interval</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customInterval}
-                onChange={(e) => setCustomInterval(e.target.value)}
-                placeholder="e.g., 45m, 90m, 2h"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
-              />
-              <button
-                onClick={() => {
-                  if (customInterval.trim()) {
-                    handleTimeframeSelect(customInterval);
-                    setCustomInterval("");
-                  }
-                }}
+        <div className
