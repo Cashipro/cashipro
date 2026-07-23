@@ -51,30 +51,6 @@ const fetchRealCoins = async () => {
   }
 };
 
-// ===== TIMEFRAME INTERVAL MAP =====
-const getInterval = (tf: string): string => {
-  const map: Record<string, string> = {
-    "1s": "1",
-    "1m": "1",
-    "5m": "5",
-    "15m": "15",
-    "30m": "30",
-    "1h": "60",
-    "2h": "120",
-    "4h": "240",
-    "6h": "360",
-    "8h": "480",
-    "12h": "720",
-    "1D": "1D",
-    "2D": "2D",
-    "3D": "3D",
-    "5D": "5D",
-    "1W": "1W",
-    "Month": "1M",
-  };
-  return map[tf] || "15";
-};
-
 // ============================================================
 // 2. MAIN COMPONENT
 // ============================================================
@@ -338,9 +314,6 @@ export default function TradePage() {
                   className="px-2 py-0.5 rounded text-xs text-gray-400 hover:text-white transition flex items-center gap-0.5"
                 >
                   More
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
                 </button>
 
                 {showMoreTimeframes && (
@@ -374,7 +347,7 @@ export default function TradePage() {
             </div>
 
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
-              <Chart symbol={pair} theme="dark" height={400} interval={getInterval(timeframe)} />
+              <Chart symbol={pair} theme="dark" height={400} />
             </div>
           </div>
 
