@@ -1,156 +1,139 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, IChartApi, ISeriesApi } from "lightweight-charts";
+import React, { useEffect, useRef, useState } from "react";
+import { createChart } from "lightweight-charts";
 
-interface ChartProps {
-  symbol: string;
-}
-
-const timeframes = [
-  { label: "1m", value: "1" },
-  { label: "5m", value: "5" },
-  { label: "15m", value: "15" },
-  { label: "1H", value: "60" },
-  { label: "4H", value: "240" },
-  { label: "1D", value: "D" },
-];
-
-export default function Chart({ symbol }: ChartProps) {
+export default function Chart({ symbol }: { symbol: string }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<any>(null);
-  const volumeSeriesRef = useRef<any>(null);
-
   const [selectedTF, setSelectedTF] = useState("15");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchKlines = async (interval: string = "15") => {
-    try {
-      const res = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=400`
-      );
-      const data: any[] = await res.json();
+  const timeframes = ["1", "5", "15", "60", "240", "D"];
 
-      const candles = data.map((d) => ({
-        time: Math.floor(d[0] / 1000),
-        open: parseFloat(d[1]),
-        high: parseFloat(d[2]),
-        low: parseFloat(d[3]),
-        close: parseFloat(d[4]),
-      }));
-
-      const volumes = data.map((d) => ({
-        time: Math.floor(d[0] / 1000),
-        value: parseFloat(d[5]),
-        color: parseFloat(d[4]) > parseFloat(d[1]) ? "#22c55e" : "#ef4444",
-      }));
-
-      return { candles, volumes };
-    } catch (e) {
-      console.error(e);
-      return { candles: [], volumes: [] };
-    }
-  };
-
-  // Create Chart
   useEffect(() => {
-    const container = chartContainerRef.current;
-    if (!container) return;
+    let chart: any = null;
 
-    const chart = createChart(container, {
-      width: container.clientWidth || 800,
-      height: 480,
-      layout: { background: { color: '#0F1217' }, textColor: '#d1d5db' },
-      grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
-      timeScale: { timeVisible: true },
-    });
+    const initChart = async () => {
+      const container = chartContainerRef.current;
+      if (!container) {
+        console.error("Chart container not found");
+        return;
+      }
 
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      wickUpColor: '#22c55e',
-      wickDownColor: '#ef4444',
-    });
+      try {
+        // Clear previous chart
+        container.innerHTML = "";
 
-    const volumeSeries = chart.addHistogramSeries({
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
-    });
+        chart = createChart(container, {
+          width: container.clientWidth || 900,
+          height: 520,
+          layout: { background: { color: "#0F1217" }, textColor: "#ddd" },
+          grid: { vertLines: { color: "#1F2937" }, horzLines: { color: "#1F2937" } },
+          timeScale: { timeVisible: true, secondsVisible: false },
+        });
 
-    chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+        const candleSeries = chart.addCandlestickSeries({
+          upColor: "#22c55e",
+          downColor: "#ef4444",
+          wickUpColor: "#22c55e",
+          wickDownColor: "#ef4444",
+        });
 
-    chartRef.current = chart;
-    candleSeriesRef.current = candleSeries;
-    volumeSeriesRef.current = volumeSeries;
+        const volumeSeries = chart.addHistogramSeries({
+          priceScaleId: "volume",
+        });
 
+        chart.priceScale("volume").applyOptions({
+          scaleMargins: { top: 0.8, bottom: 0 },
+        });
+
+        // Fetch data
+        setLoading(true);
+        const res = await fetch(
+          `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${selectedTF}&limit=300`
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch data");
+
+        const data = await res.json();
+
+        const candles = data.map((d: any) => ({
+          time: Math.floor(d[0] / 1000),
+          open: +d[1],
+          high: +d[2],
+          low: +d[3],
+          close: +d[4],
+        }));
+
+        const volumes = data.map((d: any) => ({
+          time: Math.floor(d[0] / 1000),
+          value: +d[5],
+          color: +d[4] >= +d[1] ? "#22c55e" : "#ef4444",
+        }));
+
+        candleSeries.setData(candles);
+        volumeSeries.setData(volumes);
+
+        chart.timeScale().fitContent();
+        setError(null);
+
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "Chart loading failed");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initChart();
+
+    // Cleanup
     return () => {
-      chart.remove();
+      if (chart) chart.remove();
     };
-  }, []);
-
-  // Load Data
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { candles, volumes } = await fetchKlines(selectedTF);
-
-      candleSeriesRef.current?.setData(candles);
-      volumeSeriesRef.current?.setData(volumes);
-
-      chartRef.current?.timeScale().fitContent();
-      setLoading(false);
-    };
-
-    load();
   }, [symbol, selectedTF]);
 
-  // Resize Handler
-  const resizeChart = useCallback(() => {
-    if (chartRef.current && chartContainerRef.current) {
-      chartRef.current.resize(
-        chartContainerRef.current.clientWidth,
-        480
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('resize', resizeChart);
-    setTimeout(resizeChart, 300); // initial resize
-    return () => window.removeEventListener('resize', resizeChart);
-  }, [resizeChart]);
-
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Timeframe Bar */}
-      <div className="flex gap-1 px-4 py-2 border-b border-gray-700 bg-[#111] flex-shrink-0">
-        {timeframes.map(tf => (
+    <div className="flex flex-col h-full bg-[#0F1217]">
+      {/* Timeframe Selector */}
+      <div className="px-4 py-3 border-b border-gray-700 bg-[#111] flex gap-2 overflow-x-auto">
+        {["1m","5m","15m","1H","4H","1D"].map((label, i) => (
           <button
-            key={tf.value}
-            onClick={() => setSelectedTF(tf.value)}
-            className={`px-3 py-1 text-xs rounded-md transition ${
-              selectedTF === tf.value 
-                ? 'bg-yellow-500 text-black font-bold' 
-                : 'text-gray-400 hover:bg-gray-800'
+            key={i}
+            onClick={() => setSelectedTF(timeframes[i])}
+            className={`px-4 py-1.5 text-sm rounded-lg flex-shrink-0 transition ${
+              selectedTF === timeframes[i] 
+                ? "bg-yellow-500 text-black font-bold" 
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
             }`}
           >
-            {tf.label}
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Main Chart Area */}
-      <div className="flex-1 relative bg-[#0F1217]">
+      {/* Chart Area */}
+      <div className="relative flex-1 bg-[#0a0a0a]">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/60">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="text-center">
-              <div className="animate-spin h-10 w-10 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-3" />
-              <p className="text-gray-400">Loading {symbol} chart...</p>
+              <div className="animate-spin mx-auto h-12 w-12 border-4 border-yellow-500 border-t-transparent rounded-full" />
+              <p className="mt-4 text-gray-400">Loading {symbol} market data...</p>
             </div>
           </div>
         )}
-        <div ref={chartContainerRef} className="w-full h-full min-h-[480px]" />
+
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center text-red-500">
+            {error}
+          </div>
+        )}
+
+        <div 
+          ref={chartContainerRef} 
+          className="w-full h-[520px] border border-gray-800"
+        />
       </div>
     </div>
   );
