@@ -239,8 +239,10 @@ export default function TradePage() {
   const pair = (params.pair as string) || "BTCUSDT";
   const displaySymbol = pair.replace("USDT", "");
 
-  const [loading, setLoading] = useState(true);
+  const [coins, setCoins] = useState<string[]>([]);
+  const [selectedCoin, setSelectedCoin] = useState(displaySymbol);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMoreTimeframes, setShowMoreTimeframes] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
@@ -252,8 +254,6 @@ export default function TradePage() {
   const [low, setLow] = useState(0);
   const [volume, setVolume] = useState(0);
   const [orderBook, setOrderBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
-  const [coins, setCoins] = useState<string[]>([]);
-  const [selectedCoin, setSelectedCoin] = useState(displaySymbol);
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"limit" | "market">("limit");
@@ -475,7 +475,7 @@ export default function TradePage() {
           <div className="flex-1 flex flex-col min-w-0 border-r border-gray-700">
             <div className="border-b border-gray-700 px-4 py-1.5 flex items-center gap-1 text-sm flex-shrink-0 flex-wrap">
               <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">Chart</span>
-              
+
               <button
                 onClick={() => handleTimeframeSelect("1s")}
                 className={`px-2 py-0.5 rounded text-xs transition ${
@@ -484,7 +484,7 @@ export default function TradePage() {
               >
                 1s
               </button>
-              
+
               {["15m", "1h", "4h", "1D", "1W"].map((tf) => (
                 <button
                   key={tf}
@@ -496,7 +496,7 @@ export default function TradePage() {
                   {tf}
                 </button>
               ))}
-              
+
               <div className="relative">
                 <button
                   onClick={() => setShowMoreTimeframes(!showMoreTimeframes)}
@@ -507,7 +507,7 @@ export default function TradePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                
+
                 {showMoreTimeframes && (
                   <div className="absolute top-full left-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg p-2 z-50 min-w-[150px] max-h-60 overflow-y-auto">
                     <div className="grid grid-cols-2 gap-1">
@@ -523,7 +523,7 @@ export default function TradePage() {
                         </button>
                       ))}
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         setShowMoreTimeframes(false);
