@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import RealChart from "@/components/RealChart";
+import Chart from "@/components/Chart";
 
 // ============================================================
 // 1. BINANCE API — REAL DATA FUNCTIONS
@@ -355,7 +355,7 @@ export default function TradePage() {
             </div>
 
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
-              <RealChart symbol={selectedCoin} interval={timeframe} onCandleClick={handleCandleClick} />
+              <Chart symbol={pair} theme="dark" height={400} />
             </div>
 
             {selectedCandle && (
