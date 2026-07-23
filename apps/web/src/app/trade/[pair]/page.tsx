@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import Chart from "@/components/Chart";
 
 // ============================================================
-// 1. BINANCE API — REAL DATA FUNCTIONS
+// 1. BINANCE API — REAL DATA
 // ============================================================
 
 const fetchRealOrderBook = async (symbol: string) => {
@@ -64,9 +64,6 @@ export default function TradePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [showMoreTimeframes, setShowMoreTimeframes] = useState(false);
-  const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customInterval, setCustomInterval] = useState("");
 
   const [price, setPrice] = useState(0);
   const [priceChange, setPriceChange] = useState(0);
@@ -82,14 +79,8 @@ export default function TradePage() {
   const [tradePrice, setTradePrice] = useState(0);
   const [percent, setPercent] = useState(0);
   const [quantityType, setQuantityType] = useState<"usdt" | "coin">("usdt");
-  const [timeframe, setTimeframe] = useState("15m");
 
   const searchRef = useRef<HTMLDivElement>(null);
-
-  // ===== TIME FRAMES =====
-  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W"];
-  const mainTimeframes = ["1s", "15m", "1h", "4h", "1D", "1W"];
-  const moreTimeframes = ["1m", "5m", "30m"];
 
   // ===== LOAD COINS =====
   useEffect(() => {
@@ -152,7 +143,6 @@ export default function TradePage() {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
-        setShowMoreTimeframes(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -165,13 +155,6 @@ export default function TradePage() {
     setShowDropdown(false);
     await updateData(coin);
     window.history.pushState(null, "", `/trade/${coin}USDT`);
-  };
-
-  const handleTimeframeSelect = (tf: string) => {
-    setTimeframe(tf);
-    setShowMoreTimeframes(false);
-    setShowCustomModal(false);
-    setCustomInterval("");
   };
 
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,59 +278,10 @@ export default function TradePage() {
           <div className="flex-1 flex flex-col min-w-0 border-r border-gray-700">
             <div className="border-b border-gray-700 px-4 py-1.5 flex items-center gap-1 text-sm flex-shrink-0 flex-wrap">
               <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">Chart</span>
-
-              {mainTimeframes.map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => handleTimeframeSelect(tf)}
-                  className={`px-2 py-0.5 rounded text-xs transition ${
-                    timeframe === tf ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
-
-              <div className="relative">
-                <button
-                  onClick={() => setShowMoreTimeframes(!showMoreTimeframes)}
-                  className="px-2 py-0.5 rounded text-xs text-gray-400 hover:text-white transition flex items-center gap-0.5"
-                >
-                  More
-                </button>
-
-                {showMoreTimeframes && (
-                  <div className="absolute top-full left-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg p-2 z-50 min-w-[150px] max-h-60 overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-1">
-                      {moreTimeframes.map((tf) => (
-                        <button
-                          key={tf}
-                          onClick={() => handleTimeframeSelect(tf)}
-                          className={`px-2 py-1 rounded text-xs transition ${
-                            timeframe === tf ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white hover:bg-gray-800"
-                          }`}
-                        >
-                          {tf}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setShowMoreTimeframes(false);
-                        setShowCustomModal(true);
-                      }}
-                      className="w-full mt-2 px-2 py-1 rounded text-xs text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/10 transition"
-                    >
-                      Custom Interval
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
 
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
-              <Chart symbol={pair} theme="dark" height={400} />
+              <Chart symbol={pair} />
             </div>
           </div>
 
@@ -537,42 +471,6 @@ export default function TradePage() {
         </div>
         <button className="bg-yellow-500 hover:bg-yellow-400 px-4 py-0.5 rounded-full text-black text-xs font-medium">Deposit</button>
       </div>
-
-      {/* ===== CUSTOM INTERVAL MODAL ===== */}
-      {showCustomModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-white font-bold mb-4">Custom Interval</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customInterval}
-                onChange={(e) => setCustomInterval(e.target.value)}
-                placeholder="e.g., 45m, 90m, 2h"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-yellow-500"
-              />
-              <button
-                onClick={() => {
-                  if (customInterval.trim()) {
-                    handleTimeframeSelect(customInterval);
-                    setCustomInterval("");
-                    setShowCustomModal(false);
-                  }
-                }}
-                className="bg-yellow-500 text-black px-4 py-2 rounded-lg font-medium hover:bg-yellow-400 transition"
-              >
-                Apply
-              </button>
-            </div>
-            <button
-              onClick={() => setShowCustomModal(false)}
-              className="mt-4 w-full py-2 bg-gray-800 rounded-lg text-sm text-gray-400 hover:text-white transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
