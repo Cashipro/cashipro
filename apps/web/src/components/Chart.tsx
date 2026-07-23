@@ -19,11 +19,13 @@ export default function Chart({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Cleanup previous widget
     if (widgetRef.current) {
       widgetRef.current.remove();
       widgetRef.current = null;
     }
 
+    // Clear container
     containerRef.current.innerHTML = "";
 
     const script = document.createElement("script");
@@ -47,7 +49,6 @@ export default function Chart({
         autosize: true,
         showVolume: false,
         hide_top_toolbar: true,
-        hide_side_toolbar: true,
         container_id: widgetId,
       });
     };
