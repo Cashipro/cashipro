@@ -48,7 +48,7 @@ export default function Chart({ symbol }: ChartProps) {
 
       return { candles, volumes };
     } catch (err) {
-      console.error(err);
+      console.error("Klines fetch error:", err);
       return { candles: [], volumes: [] };
     }
   };
@@ -86,6 +86,10 @@ export default function Chart({ symbol }: ChartProps) {
       color: "#26a69a",
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
+    });
+
+    // Separate scale for volume
+    chart.priceScale("volume").applyOptions({
       scaleMargins: { top: 0.75, bottom: 0 },
     });
 
@@ -94,10 +98,12 @@ export default function Chart({ symbol }: ChartProps) {
     volumeSeriesRef.current = volumeSeries;
 
     const handleResize = () => {
-      chart.resize(
-        chartContainerRef.current!.clientWidth,
-        chartContainerRef.current!.clientHeight
-      );
+      if (chartContainerRef.current) {
+        chart.resize(
+          chartContainerRef.current.clientWidth,
+          chartContainerRef.current.clientHeight
+        );
+      }
     };
 
     window.addEventListener("resize", handleResize);
@@ -108,20 +114,22 @@ export default function Chart({ symbol }: ChartProps) {
     };
   }, []);
 
-  // Load data when symbol or timeframe changes
+  // Load data
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       const { candles, volumes } = await fetchKlines(selectedTF);
 
-      if (candleSeriesRef.current && candles.length) {
+      if (candleSeriesRef.current && candles.length > 0) {
         candleSeriesRef.current.setData(candles);
       }
-      if (volumeSeriesRef.current && volumes.length) {
+      if (volumeSeriesRef.current && volumes.length > 0) {
         volumeSeriesRef.current.setData(volumes);
       }
 
-      chartRef.current?.timeScale().fitContent();
+      if (chartRef.current) {
+        chartRef.current.timeScale().fitContent();
+      }
       setLoading(false);
     };
 
@@ -130,7 +138,7 @@ export default function Chart({ symbol }: ChartProps) {
 
   return (
     <div className="flex flex-col h-full bg-[#0F1217]">
-      {/* Timeframe Tabs */}
+      {/* Timeframe Selector */}
       <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-700 bg-[#111] flex-shrink-0 overflow-x-auto">
         {timeframes.map((tf) => (
           <button
@@ -147,7 +155,7 @@ export default function Chart({ symbol }: ChartProps) {
         ))}
       </div>
 
-      {/* Chart Area */}
+      {/* Chart */}
       <div className="flex-1 relative min-h-0">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
