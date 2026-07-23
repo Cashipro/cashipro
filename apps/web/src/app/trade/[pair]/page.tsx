@@ -759,4 +759,8 @@ export default function TradePage() {
               />
               <button
                 onClick={() => {
-                  if (
+                  if (customInterval.trim()) {
+                    handleTimeframeSelect(customInterval);
+                    setCustomInterval("");
+                  }
+                }}
