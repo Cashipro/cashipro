@@ -6,12 +6,14 @@ interface ChartProps {
   symbol?: string;
   theme?: "dark" | "light";
   height?: number;
+  interval?: string;
 }
 
 export default function Chart({
   symbol = "BTCUSDT",
   theme = "dark",
   height = 400,
+  interval = "15",
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
