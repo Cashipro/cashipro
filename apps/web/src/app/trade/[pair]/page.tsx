@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { createChart, ColorType } from "lightweight-charts";
+import RealChart from "@/components/RealChart";
 
 // ============================================================
 // 1. BINANCE API — REAL DATA FUNCTIONS
@@ -38,25 +38,6 @@ const fetchRealStats = async (symbol: string) => {
   }
 };
 
-const fetchRealKlines = async (symbol: string, interval: string = "1m", limit: number = 500) => {
-  try {
-    const res = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${symbol}USDT&interval=${interval}&limit=${limit}`
-    );
-    const data = await res.json();
-    return data.map((candle: any) => ({
-      time: candle[0] / 1000,
-      open: parseFloat(candle[1]),
-      high: parseFloat(candle[2]),
-      low: parseFloat(candle[3]),
-      close: parseFloat(candle[4]),
-      volume: parseFloat(candle[5]),
-    }));
-  } catch {
-    return [];
-  }
-};
-
 const fetchRealCoins = async () => {
   try {
     const res = await fetch("https://api.binance.com/api/v3/exchangeInfo");
@@ -71,168 +52,7 @@ const fetchRealCoins = async () => {
 };
 
 // ============================================================
-// 2. TIMEFRAME CONFIGURATIONS
-// ============================================================
-
-const getBinanceInterval = (tf: string): string => {
-  const map: Record<string, string> = {
-    "1s": "1s",
-    "1m": "1m",
-    "3m": "3m",
-    "5m": "5m",
-    "10m": "10m",
-    "15m": "15m",
-    "30m": "30m",
-    "1h": "1h",
-    "2h": "2h",
-    "4h": "4h",
-    "6h": "6h",
-    "8h": "8h",
-    "12h": "12h",
-    "1D": "1d",
-    "2D": "2d",
-    "3D": "3d",
-    "5D": "5d",
-    "1W": "1w",
-    "Month": "1M",
-  };
-  return map[tf] || "15m";
-};
-
-const getLimitForTimeframe = (tf: string): number => {
-  const map: Record<string, number> = {
-    "1s": 100,
-    "1m": 500,
-    "3m": 500,
-    "5m": 500,
-    "10m": 500,
-    "15m": 500,
-    "30m": 500,
-    "1h": 500,
-    "2h": 500,
-    "4h": 500,
-    "6h": 500,
-    "8h": 500,
-    "12h": 500,
-    "1D": 365,
-    "2D": 365,
-    "3D": 365,
-    "5D": 365,
-    "1W": 365,
-    "Month": 365,
-  };
-  return map[tf] || 500;
-};
-
-// ============================================================
-// 3. CHART COMPONENT
-// ============================================================
-function RealChart({ symbol, interval, onCandleClick }: any) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const chart = createChart(containerRef.current, {
-      layout: { background: { type: ColorType.Solid, color: "#0A0A0A" }, textColor: "#d1d4dc" },
-      grid: { vertLines: { color: "rgba(42, 46, 57, 0.6)" }, horzLines: { color: "rgba(42, 46, 57, 0.6)" } },
-      autoSize: true,
-      crosshair: { mode: 1 },
-      rightPriceScale: { borderColor: "rgba(197, 203, 206, 0.3)" },
-      timeScale: { borderColor: "rgba(197, 203, 206, 0.3)", timeVisible: true, secondsVisible: interval === "1s" },
-    });
-    chartRef.current = chart;
-
-    let series: any;
-    if (interval === "1s") {
-      series = chart.addLineSeries({
-        color: "#26a69a",
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-    } else {
-      series = chart.addCandlestickSeries({
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
-        borderVisible: false,
-        wickVisible: true,
-      });
-    }
-
-    if (interval !== "1s" && series && typeof series.subscribeClick === "function") {
-      series.subscribeClick((param: any) => {
-        if (param.time && onCandleClick) {
-          onCandleClick(param);
-        }
-      });
-    }
-
-    const binanceInterval = getBinanceInterval(interval);
-    const limit = getLimitForTimeframe(interval);
-
-    fetchRealKlines(symbol, binanceInterval, limit).then((data) => {
-      if (data.length > 0) {
-        if (interval === "1s") {
-          const lineData = data.map((d: any) => ({ time: d.time, value: d.close }));
-          series.setData(lineData);
-        } else {
-          series.setData(data);
-        }
-        chart.timeScale().fitContent();
-      }
-    });
-
-    wsRef.current = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}usdt@trade`);
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.p) {
-        const price = parseFloat(data.p);
-        const now = Math.floor(Date.now() / 60000) * 60;
-        const lastData = series.data();
-        if (lastData.length > 0) {
-          const last = lastData[lastData.length - 1];
-          if (interval === "1s") {
-            series.update({ time: Math.floor(Date.now() / 1000), value: price });
-          } else if ('high' in last) {
-            if (last.time === now) {
-              series.update({
-                time: last.time,
-                open: last.open,
-                high: Math.max(last.high, price),
-                low: Math.min(last.low, price),
-                close: price,
-              });
-            } else {
-              series.update({ time: now as any, open: price, high: price, low: price, close: price });
-            }
-          }
-        }
-      }
-    };
-
-    const handleResize = () => {
-      if (chartRef.current && containerRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (wsRef.current) wsRef.current.close();
-      if (chartRef.current) chartRef.current.remove();
-    };
-  }, [symbol, interval]);
-
-  return <div ref={containerRef} className="w-full h-full" />;
-}
-
-// ============================================================
-// 4. MAIN COMPONENT
+// 2. MAIN COMPONENT
 // ============================================================
 export default function TradePage() {
   const params = useParams();
@@ -256,7 +76,6 @@ export default function TradePage() {
   const [orderBook, setOrderBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
 
   const [side, setSide] = useState<"buy" | "sell">("buy");
-  // ✅ FIX: orderType mein "tpSl" add karo
   const [orderType, setOrderType] = useState<"limit" | "market" | "tpSl">("limit");
   const [amount, setAmount] = useState(0);
   const [showTPSL, setShowTPSL] = useState(false);
@@ -264,9 +83,14 @@ export default function TradePage() {
   const [percent, setPercent] = useState(0);
   const [quantityType, setQuantityType] = useState<"usdt" | "coin">("usdt");
   const [timeframe, setTimeframe] = useState("15m");
-  const [candleData, setCandleData] = useState<any>(null);
+  const [selectedCandle, setSelectedCandle] = useState<any>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // ===== TIME FRAMES =====
+  const timeframes = ["1s", "1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W"];
+  const mainTimeframes = ["1s", "15m", "1h", "4h", "1D", "1W"];
+  const moreTimeframes = ["1m", "5m", "30m"];
 
   // ===== LOAD COINS =====
   useEffect(() => {
@@ -352,7 +176,7 @@ export default function TradePage() {
   };
 
   const handleCandleClick = (candle: any) => {
-    setCandleData(candle);
+    setSelectedCandle(candle);
   };
 
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -389,7 +213,7 @@ export default function TradePage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white font-sans overflow-hidden flex flex-col">
-      {/* TOP NAV */}
+      {/* ===== TOP NAV ===== */}
       <div className="bg-black border-b border-gray-800 px-4 py-2 flex items-center justify-between sticky top-0 z-50 flex-shrink-0">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
@@ -410,9 +234,9 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* MAIN LAYOUT */}
+      {/* ===== MAIN LAYOUT ===== */}
       <div className="flex-1 flex flex-col min-h-0">
-        {/* COIN SEARCH + PAIR HEADER */}
+        {/* ===== COIN SEARCH + PAIR HEADER ===== */}
         <div className="bg-[#111] border-b border-gray-700 px-4 py-3 flex flex-wrap items-center gap-4 flex-shrink-0">
           <div className="relative w-64" ref={searchRef}>
             <input
@@ -470,23 +294,14 @@ export default function TradePage() {
           </div>
         </div>
 
-        {/* BOTTOM ROW: CHART + TRADE + ORDER BOOK */}
+        {/* ===== BOTTOM ROW: CHART + TRADE + ORDER BOOK ===== */}
         <div className="flex-1 flex min-h-0">
-          {/* LEFT: CHART */}
+          {/* ===== LEFT: CHART ===== */}
           <div className="flex-1 flex flex-col min-w-0 border-r border-gray-700">
             <div className="border-b border-gray-700 px-4 py-1.5 flex items-center gap-1 text-sm flex-shrink-0 flex-wrap">
               <span className="text-yellow-400 border-b-2 border-yellow-400 pb-1 mr-2">Chart</span>
 
-              <button
-                onClick={() => handleTimeframeSelect("1s")}
-                className={`px-2 py-0.5 rounded text-xs transition ${
-                  timeframe === "1s" ? "bg-yellow-500/20 text-yellow-400" : "text-gray-400 hover:text-white"
-                }`}
-              >
-                1s
-              </button>
-
-              {["15m", "1h", "4h", "1D", "1W"].map((tf) => (
+              {mainTimeframes.map((tf) => (
                 <button
                   key={tf}
                   onClick={() => handleTimeframeSelect(tf)}
@@ -512,7 +327,7 @@ export default function TradePage() {
                 {showMoreTimeframes && (
                   <div className="absolute top-full left-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg p-2 z-50 min-w-[150px] max-h-60 overflow-y-auto">
                     <div className="grid grid-cols-2 gap-1">
-                      {["1m", "3m", "5m", "10m", "30m", "2h", "6h", "8h", "12h", "2D", "3D", "5D", "Month"].map((tf) => (
+                      {moreTimeframes.map((tf) => (
                         <button
                           key={tf}
                           onClick={() => handleTimeframeSelect(tf)}
@@ -543,20 +358,20 @@ export default function TradePage() {
               <RealChart symbol={selectedCoin} interval={timeframe} onCandleClick={handleCandleClick} />
             </div>
 
-            {candleData && (
+            {selectedCandle && (
               <div className="bg-[#111] px-4 py-1 border-t border-gray-700 flex gap-4 text-xs flex-shrink-0 flex-wrap">
-                <span>Time: {new Date(candleData.time * 1000).toLocaleString()}</span>
-                <span>O: <span className="text-white">{candleData.open}</span></span>
-                <span>H: <span className="text-green-500">{candleData.high}</span></span>
-                <span>L: <span className="text-red-500">{candleData.low}</span></span>
-                <span>C: <span className="text-white">{candleData.close}</span></span>
+                <span>📅 {new Date(selectedCandle.time * 1000).toLocaleString()}</span>
+                <span>O: <span className="text-white">{selectedCandle.open}</span></span>
+                <span>H: <span className="text-green-500">{selectedCandle.high}</span></span>
+                <span>L: <span className="text-red-500">{selectedCandle.low}</span></span>
+                <span>C: <span className="text-white">{selectedCandle.close}</span></span>
               </div>
             )}
           </div>
 
-          {/* RIGHT: TRADE FORM (TOP) + ORDER BOOK (BOTTOM) */}
+          {/* ===== RIGHT: TRADE FORM + ORDER BOOK ===== */}
           <div className="w-96 flex flex-col flex-shrink-0 bg-[#0A0A0A]">
-            {/* TRADE FORM */}
+            {/* ===== TRADE FORM ===== */}
             <div className="p-4 bg-[#111] border-b border-gray-700 flex-shrink-0 overflow-y-auto max-h-[55%]">
               <div className="flex rounded-lg overflow-hidden bg-gray-900 mb-3">
                 <button
@@ -594,7 +409,7 @@ export default function TradePage() {
                 </button>
               </div>
 
-              {/* Price Box */}
+              {/* Price */}
               <div className="mb-2">
                 <div className="flex justify-between text-[10px] text-gray-500"><span>Price (USDT)</span></div>
                 <div className="flex items-center gap-1">
@@ -610,7 +425,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              {/* Quantity Box */}
+              {/* Quantity */}
               <div className="mb-2">
                 <div className="flex justify-between text-[10px] text-gray-500">
                   <span>Quantity</span>
@@ -629,7 +444,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              {/* Slide (0-100%) */}
+              {/* Slider */}
               <div className="mb-2">
                 <input
                   type="range"
@@ -646,7 +461,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              {/* USDT / Coin toggle */}
+              {/* USDT / Coin */}
               <div className="flex gap-1 mb-2 text-xs">
                 <button
                   onClick={() => setQuantityType("usdt")}
@@ -687,12 +502,12 @@ export default function TradePage() {
                 </div>
               )}
 
-              {/* Available Balance */}
+              {/* Balance */}
               <div className="text-xs text-gray-500 mb-2">
                 Available: <span className="text-white font-bold">0.0142 USDT</span>
               </div>
 
-              {/* Buy Button */}
+              {/* Trade Button */}
               <button
                 onClick={() => alert(`${side === "buy" ? "Buy" : "Sell"} ${selectedCoin} @ $${tradePrice}`)}
                 className={`w-full py-3 rounded-xl text-sm font-bold transition ${side === "buy" ? "bg-green-500 hover:bg-green-600 text-black" : "bg-red-500 hover:bg-red-600 text-white"}`}
@@ -701,7 +516,7 @@ export default function TradePage() {
               </button>
             </div>
 
-            {/* ORDER BOOK */}
+            {/* ===== ORDER BOOK ===== */}
             <div className="flex-1 p-2 overflow-y-auto min-h-0 bg-[#0A0A0A]">
               <div className="text-yellow-400 text-xs font-medium mb-1">Order Book</div>
               <div className="text-[10px] text-gray-500 grid grid-cols-3 mb-0.5">
@@ -731,7 +546,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {/* BOTTOM TABS */}
+      {/* ===== BOTTOM TABS ===== */}
       <div className="bg-[#0F1117] border-t border-gray-700 px-4 py-1.5 flex items-center justify-between text-xs flex-shrink-0">
         <div className="flex gap-4">
           <span className="text-yellow-400 border-b-2 border-yellow-400 pb-0.5">Open Orders(0)</span>
@@ -741,7 +556,7 @@ export default function TradePage() {
         <button className="bg-yellow-500 hover:bg-yellow-400 px-4 py-0.5 rounded-full text-black text-xs font-medium">Deposit</button>
       </div>
 
-      {/* Custom Interval Modal */}
+      {/* ===== CUSTOM INTERVAL MODAL ===== */}
       {showCustomModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
