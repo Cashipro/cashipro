@@ -51,6 +51,30 @@ const fetchRealCoins = async () => {
   }
 };
 
+// ===== TIMEFRAME INTERVAL MAP =====
+const getInterval = (tf: string): string => {
+  const map: Record<string, string> = {
+    "1s": "1",
+    "1m": "1",
+    "5m": "5",
+    "15m": "15",
+    "30m": "30",
+    "1h": "60",
+    "2h": "120",
+    "4h": "240",
+    "6h": "360",
+    "8h": "480",
+    "12h": "720",
+    "1D": "1D",
+    "2D": "2D",
+    "3D": "3D",
+    "5D": "5D",
+    "1W": "1W",
+    "Month": "1M",
+  };
+  return map[tf] || "15";
+};
+
 // ============================================================
 // 2. MAIN COMPONENT
 // ============================================================
@@ -83,7 +107,6 @@ export default function TradePage() {
   const [percent, setPercent] = useState(0);
   const [quantityType, setQuantityType] = useState<"usdt" | "coin">("usdt");
   const [timeframe, setTimeframe] = useState("15m");
-  const [selectedCandle, setSelectedCandle] = useState<any>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -173,10 +196,6 @@ export default function TradePage() {
     setShowMoreTimeframes(false);
     setShowCustomModal(false);
     setCustomInterval("");
-  };
-
-  const handleCandleClick = (candle: any) => {
-    setSelectedCandle(candle);
   };
 
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -355,18 +374,8 @@ export default function TradePage() {
             </div>
 
             <div className="flex-1 bg-[#0F1217] p-1 min-h-0">
-              <Chart symbol={pair} theme="dark" height={400} />
+              <Chart symbol={pair} theme="dark" height={400} interval={getInterval(timeframe)} />
             </div>
-
-            {selectedCandle && (
-              <div className="bg-[#111] px-4 py-1 border-t border-gray-700 flex gap-4 text-xs flex-shrink-0 flex-wrap">
-                <span>📅 {new Date(selectedCandle.time * 1000).toLocaleString()}</span>
-                <span>O: <span className="text-white">{selectedCandle.open}</span></span>
-                <span>H: <span className="text-green-500">{selectedCandle.high}</span></span>
-                <span>L: <span className="text-red-500">{selectedCandle.low}</span></span>
-                <span>C: <span className="text-white">{selectedCandle.close}</span></span>
-              </div>
-            )}
           </div>
 
           {/* ===== RIGHT: TRADE FORM + ORDER BOOK ===== */}
