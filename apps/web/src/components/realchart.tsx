@@ -72,7 +72,6 @@ const getBinanceInterval = (tf: string): string => {
 export default function RealChart({ symbol, interval = "15m", onCandleClick }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
-  const seriesRef = useRef<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -124,11 +123,11 @@ export default function RealChart({ symbol, interval = "15m", onCandleClick }: C
       borderVisible: false,
       wickVisible: true,
     });
-    seriesRef.current = series;
 
     series.setData(chartData);
 
-    series.subscribeClick((param: any) => {
+    // ✅ FIX: Crosshair se candle data fetch karo
+    chart.subscribeCrosshairMove((param: any) => {
       if (param.time && onCandleClick) {
         const candle = chartData.find((d) => d.time === param.time);
         if (candle) {
