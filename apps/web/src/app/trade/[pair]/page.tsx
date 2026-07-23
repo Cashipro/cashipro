@@ -131,7 +131,6 @@ function RealChart({ symbol, interval, onCandleClick }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const isCandlestick = interval !== "1s";
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -146,7 +145,7 @@ function RealChart({ symbol, interval, onCandleClick }: any) {
     });
     chartRef.current = chart;
 
-    let series;
+    let series: any;
     if (interval === "1s") {
       series = chart.addLineSeries({
         color: "#26a69a",
@@ -164,8 +163,8 @@ function RealChart({ symbol, interval, onCandleClick }: any) {
       });
     }
 
-    // ✅ FIX: Sirf candlestick series par subscribeClick call karo
-    if (isCandlestick && series.subscribeClick) {
+    // ✅ FIX: sirf candlestick series par subscribeClick
+    if (interval !== "1s" && series && typeof series.subscribeClick === "function") {
       series.subscribeClick((param: any) => {
         if (param.time && onCandleClick) {
           onCandleClick(param);
